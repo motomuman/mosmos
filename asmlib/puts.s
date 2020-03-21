@@ -1,7 +1,6 @@
 puts:
 	push	bp
 	mov	bp, sp
-
 	; save regs
 	push 	ax
 	push	bx

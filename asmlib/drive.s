@@ -1,3 +1,4 @@
+
 ; read_chs(drive, sect, dst)
 ; param
 ; 	drive: address of drive struct
@@ -5,7 +6,6 @@
 ; 	dst: buffer address
 ; ret
 ;	ax: number of success read sector
-
 read_chs:
 	
 	push	bp
@@ -92,3 +92,75 @@ read_chs:
 
 	ret
 
+; get_drive_param(drive)
+; param
+; 	drive: address of drive struct
+; ret
+;	ax: 0 in case of failure
+get_drive_param:
+	push	bp
+	mov	bp, sp
+
+	; save regs
+	push	bx
+	push	cx
+	push	es
+	push	si
+	push	di
+
+	mov	si,[bp + 4]	; get address of drive param struct
+
+	mov	ax,0
+	mov	es,ax
+	mov	di,ax
+
+	mov	ah,8			; ah=8: read drive parameter
+	mov	dl,[si + drive.no]	; drive number
+
+	int	0x13			; bios call to read drive parameters
+					; return
+					; CF: if error, 1
+					; AH: disk status code
+					; BL: drive type (only for floppy)
+					; CH: lower 8 bit of max track number(10bit)
+					; CL: higher 2 bit=higher 2 bit of max track number, lower 6 bit = max sector number
+					; DH: max head number
+					; DL: max drive number
+					; ES:DI: pointer to floppy disk parameter table
+
+	jc	.fail
+
+	; get sector number
+	mov	al,cl
+	and	ax, 0x3f		; get lower 6 bit (max sector number)
+
+	; get cylnder number
+	shr	cl,6			; cl>>=6
+					; cx
+					; ch:lower 8 bit of max track number, cl: highwer 2 bit of max track number
+	ror	cx,8			; rotate to right
+	inc	cx			; cx++
+
+	; get head number
+	movzx	bx,dh
+	inc	bx
+
+	mov	[si + drive.cyln],cx
+	mov	[si + drive.head],bx
+	mov	[si + drive.sect],ax
+
+	jmp	.success
+.fail:
+	mov	ax,0
+
+.success:
+	pop	di
+	pop	si
+	pop	es
+	pop	cx
+	pop	bx
+
+	mov	sp,bp
+	pop	bp
+
+	ret

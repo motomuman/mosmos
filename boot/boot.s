@@ -41,14 +41,7 @@ ipl:
 	cdecl puts, .read_error_msg
 	jmp 	.fin
 
-.read_success
-	; Get bios font data
-	;mov	ax,0x1130
-	;mov	bh,0x06
-	;int	10h
-	;mov	[FONT+0],es
-	;mov	[FONT+2],bp
-
+.read_success:
 	; Jump to bootmon
 	JMP	bootmon
 
@@ -89,21 +82,48 @@ FONT:
 .off:	dw 0
 
 bootmon:
-	push	word .s0
-	call	puts
-	add	sp, 2
+	cdecl 	puts, .enter_msg
 
+	; Get drive parameter
+	cdecl 	get_drive_param, BOOT 	; read_chs(drive, sect, dst)
+					; return value
+					; 	ax: 0 in case of failure
+	cmp	ax, 0
+	je	.get_drive_param_fail
 
+	; Get bios font data
+	mov	ax,0x1130
+	mov	bh,0x06
+	int	10h
+	mov	[FONT+0],es
+	mov	[FONT+2],bp
+
+	; Enable a20 gate
 	call .enable_a20
+	cdecl	puts, .enable_a20_finish
 
-	push	word .s1
-	call	puts
-	add	sp, 2
+	jmp	.fin
+
+.get_drive_param_fail:
+	cdecl 	puts, .get_drive_param_fail_msg
+	jmp	.fin
+
+
+	; loop
+.fin:
+	jmp	$
 
 ;-------------------
 ; Enable A20 gate
 ;-------------------
 .enable_a20:
+
+	push	bp
+	mov	bp, sp
+
+	; save regs
+	push 	ax
+
 	cli
 
 	; write command to key board
@@ -118,6 +138,12 @@ bootmon:
 
 	sti
 
+	; restore regs
+	pop	ax
+
+	mov	sp, bp
+	pop	bp
+
 	ret
 
 
@@ -128,5 +154,6 @@ bootmon:
 	jnz	.waitkbdout ; if not writable, loop
 	ret
 
-.s0	db "bootmon started", 0x0a, 0x0d, 0
-.s1	db "A20 gate enabled", 0x0a, 0x0d, 0
+.enter_msg	db "bootmon started", 0x0a, 0x0d, 0
+.enable_a20_finish		db "A20 gate enabled", 0x0a, 0x0d, 0
+.get_drive_param_fail_msg	db "Failed to get drive param", 0x0a, 0x0d, 0
