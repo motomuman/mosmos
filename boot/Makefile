@@ -3,15 +3,11 @@ ASM = nasm
 default: mosmos.img
 	make mosmos.img
 
-ipl.o: ipl.s
-	$(ASM) ipl.s -o ipl.o -l ipl.lst
+boot.o: boot.s
+	$(ASM) boot.s -o boot.o -l boot.lst
 
-bootmon.o: bootmon.s
-	$(ASM) bootmon.s -o bootmon.o -l bootmon.lst
-
-mosmos.img: ipl.o bootmon.o
-	cp ipl.o mosmos.img
-	dd if=bootmon.o		of=mosmos.img bs=1 seek=512 conv=notrunc
+mosmos.img: boot.o
+	cp boot.o mosmos.img
 
 clean:
 	rm -rf *.img *.lst *.o
