@@ -28,7 +28,7 @@ ipl:
 
 	; load next 512 bytes
 	mov	ah, 0x02		; Read
-	mov	al, 1			; Number of sector to read
+	mov	al, 10			; Number of sector to read
 	mov	cx, 0x0002		; Selinder number
 	mov	dh, 0x00		; Head number
 	mov	dl, [drive]		; drive number
@@ -44,6 +44,14 @@ ipl:
 
 
 .next
+	; Get bios font data
+	mov	ax,0x1130
+	mov	bh,0x06
+	int	10h
+	mov	[FONT+0],es
+	mov	[FONT+2],bp
+
+
 	; Jump to bootmon
 	JMP	0x9000
 
@@ -68,4 +76,9 @@ drive:	dw 0
 ; Boot flag, end of first 512 bytes
 times	510 - ($ - $$) db 0x00
 db	0x55, 0xaa
+
+; font data (0x7c00 + 512)
+FONT:
+.seg:	dw 0
+.off:	dw 0
 
