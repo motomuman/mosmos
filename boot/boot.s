@@ -117,6 +117,15 @@ bootmon:
 	cmp	ax, 0
 	je	.load_kernel_fail
 
+	; Wait key press so that I can see debug log before move to protect mode
+	cdecl puts, .ask_for_protect_mode_msg
+	mov	ah, 0x00
+	int	0x16
+
+	mov	ax, 0x0012	; VGA 640x480
+	int	0x10
+
+
 	; temporarily jump to kernel before relocation/32bit
 	jmp	BOOT_END
 
@@ -180,3 +189,4 @@ bootmon:
 .enable_a20_finish		db "A20 gate enabled", 0x0a, 0x0d, 0
 .get_drive_param_fail_msg	db "Failed to get drive param", 0x0a, 0x0d, 0
 .load_kernel_fail_msg		db "Failed to load kernel", 0x0a, 0x0d, 0
+.ask_for_protect_mode_msg	db "Push Key to move protect mode...", 0x0a, 0x0d, 0
