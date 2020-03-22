@@ -43,6 +43,7 @@ ipl:
 
 .read_success:
 	; Jump to bootmon
+	cdecl puts, .read_success_msg
 	JMP	bootmon
 
 
@@ -52,7 +53,8 @@ ipl:
 
 
 .hello_msg:	db "Hello, MOSMOS", 0x21, 0x0a, 0x0d, 0
-.read_error_msg: db "Read sector error", 0x0a, 0x0d, 0
+.read_error_msg: db "Load error", 0x0a, 0x0d, 0
+.read_success_msg: db "Load success", 0x0a, 0x0d, 0
 
 ALIGN	2, db 0
 BOOT: ; boot drive info
@@ -102,12 +104,32 @@ bootmon:
 	call .enable_a20
 	cdecl	puts, .enable_a20_finish
 
+	; load kernel
+	cdecl read_lba, BOOT, BOOT_SECT, KERNEL_SECT, BOOT_END 	; read_lba(drive, lba, sect, dst)
+								; param
+								; 	drive: addr for drive param struct
+								; 	lba: LBA
+								; 	sect: number of sect to read
+								; 	dst: buffer address
+								; ret
+								;	ax: number of success read sector
+
+	cmp	ax, 0
+	je	.load_kernel_fail
+
+	; temporarily jump to kernel before relocation/32bit
+	jmp	BOOT_END
+
 	jmp	.fin
 
 .get_drive_param_fail:
 	cdecl 	puts, .get_drive_param_fail_msg
 	jmp	.fin
 
+
+.load_kernel_fail:
+	cdecl 	puts, .load_kernel_fail_msg
+	jmp	.fin
 
 	; loop
 .fin:
@@ -157,3 +179,4 @@ bootmon:
 .enter_msg	db "bootmon started", 0x0a, 0x0d, 0
 .enable_a20_finish		db "A20 gate enabled", 0x0a, 0x0d, 0
 .get_drive_param_fail_msg	db "Failed to get drive param", 0x0a, 0x0d, 0
+.load_kernel_fail_msg		db "Failed to load kernel", 0x0a, 0x0d, 0

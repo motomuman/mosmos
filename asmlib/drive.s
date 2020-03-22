@@ -164,3 +164,107 @@ get_drive_param:
 	pop	bp
 
 	ret
+
+; read_lba(drive, lba, sect, dst)
+; param
+; 	drive: addr for drive param struct
+; 	lba: LBA
+; 	sect: number of sect to read
+; 	dst: buffer address
+; ret
+;	ax: number of success read sector
+
+read_lba:
+	push	bp
+	mov	bp, sp
+
+	; save regs
+	push	si
+
+	mov	si, [bp + 4]		;drive
+
+	mov	ax, [bp + 6]		;LBA
+	cdecl lba_chs, si, .chs, ax
+
+	; copy drive number
+	mov	al,[si + drive.no]
+	mov	[.chs + drive.no], al
+
+	cdecl	read_chs, .chs, word [bp + 8], word [bp + 10]
+
+	pop	si
+
+	mov	sp,bp
+	pop	bp
+
+	ret
+
+
+
+ALIGN 2
+.chs:	times drive_size	db	0
+
+
+; lba_chs(drive, drv_chs, lba)
+; param
+; 	drive: addr for drive param struct
+; 	drv_chs: addr for drive param struct to store after chs conversion
+; 	lba: LBA
+; ret
+;	ax: 0 in case of failure
+;
+; LBA -> CHS calculation
+; chs cylnder = LBA / (head num * sect num)
+; chs track(head) = (LBA % (head num * sect num)) / sect_num
+; chs sect = (LBA % (head num * sect num)) % sect_num + 1
+lba_chs:
+	push	bp
+	mov	bp, sp
+
+	; save regs
+	push	ax
+	push	bx
+	push	cx
+	push	es
+	push	si
+	push	di
+
+	mov	si,[bp+4]		; drive
+	mov	di,[bp+6]		; drv_chs
+
+
+	mov	al,[si + drive.head]	; al = head num
+	mul	byte [si + drive.sect]	; ax = max head * max sect
+	mov	bx, ax			; bx = max head * max sect
+
+	mov	dx, 0			; dx = LBA (higher 2 byte)
+	mov	ax, [bp + 8]		; ax = LBA (lower 2 byte)
+	div	bx			; DX = DX:AX % BX (LBA % (head num * sect num))
+					; AX = DX:AX / BX (LBA / (head num * sect num))
+
+	mov	[di+drive.cyln], ax	; store chs cyln
+
+	mov	ax, dx			; ax = (LBA % (head num * sect num))
+	div	byte [si + drive.sect]	; ah = (LBA % (head num * sect num)) % sect_num
+					; ah = (LBA % (head num * sect num)) / sect_num
+
+	movzx	dx, ah			; dx = sect
+	inc	dx			; sect is 1-indexed
+
+	mov	ah, 0x00		; ax = chs head
+
+	mov	[di + drive.head], ax	; store chs head
+	mov	[di + drive.sect], dx	; store chs sect
+
+	; restore regs
+	pop	di
+	pop	si
+	pop	es
+	pop	cx
+	pop	bx
+	pop	ax
+
+	mov	sp,bp
+	pop	bp
+
+	ret
