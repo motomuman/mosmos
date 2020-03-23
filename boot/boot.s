@@ -35,26 +35,17 @@ ipl:
 						; ax: number of sect successfly read
 
 	cmp	ax, bx				; if ax == bx, set ZF=1
-	jz	.read_success
+	jnz	.fail
+	JMP	stage_get_drive_param
 
-	; Faled to read sector
-	cdecl puts, .read_error_msg
-	jmp 	.fin
-
-.read_success:
-	; Jump to bootmon
-	cdecl puts, .read_success_msg
-	JMP	bootmon
-
-
-	; loop
-.fin:
+.fail
+	; Faled to load next stages
+	cdecl puts, .load_error_msg
 	jmp	$
 
 
-.hello_msg:	db "Hello, MOSMOS", 0x21, 0x0a, 0x0d, 0
-.read_error_msg: db "Load error", 0x0a, 0x0d, 0
-.read_success_msg: db "Load success", 0x0a, 0x0d, 0
+.hello_msg:	db "ipl: Hello, MOSMOS", 0x21, 0x0a, 0x0d, 0
+.load_error_msg:db "ipl: Failed to load next stages", 0x0a, 0x0d, 0
 
 ALIGN	2, db 0
 BOOT: ; boot drive info
@@ -77,13 +68,17 @@ iend
 times	510 - ($ - $$) db 0x00
 db	0x55, 0xaa
 
-
+;------------------------------------
 ; font data (0x7c00 + 512)
+;------------------------------------
 FONT:
 .seg:	dw 0
 .off:	dw 0
 
-bootmon:
+;------------------------------------
+; stage: get drive parameters
+;------------------------------------
+stage_get_drive_param:
 	cdecl 	puts, .enter_msg
 
 	; Get drive parameter
@@ -91,18 +86,40 @@ bootmon:
 					; return value
 					; 	ax: 0 in case of failure
 	cmp	ax, 0
-	je	.get_drive_param_fail
+	je	.fail
+	jmp 	stage_get_bios_font
 
+.fail:
+	cdecl 	puts, .get_drive_param_fail_msg
+	jmp	$
+
+.enter_msg			db "stage_get_drive_param: Get drive params", 0x0a, 0x0d, 0
+.get_drive_param_fail_msg      	db "stage_get_drive_param: Failed to get drive params", 0x0a, 0x0d, 0
+
+;------------------------------------
+; stage: get bios font data
+;------------------------------------
+stage_get_bios_font:
+	cdecl 	puts, .enter_msg
 	; Get bios font data
 	mov	ax,0x1130
 	mov	bh,0x06
 	int	10h
 	mov	[FONT+0],es
 	mov	[FONT+2],bp
+	jmp stage_load_kernel
+
+.enter_msg	db "stage_get_bios_font: Get bios font", 0x0a, 0x0d, 0
+
+;------------------------------------
+; stage: enter a20 and load kernel
+;------------------------------------
+stage_load_kernel:
+	cdecl 	puts, .enter_msg
 
 	; Enable a20 gate
 	call .enable_a20
-	cdecl	puts, .enable_a20_finish
+	cdecl	puts, .enable_a20_success_msg
 
 	; load kernel
 	cdecl read_lba, BOOT, BOOT_SECT, KERNEL_SECT, BOOT_END 	; read_lba(drive, lba, sect, dst)
@@ -115,36 +132,13 @@ bootmon:
 								;	ax: number of success read sector
 
 	cmp	ax, 0
-	je	.load_kernel_fail
+	je	.fail
+	jmp	stage_video_mode
 
-	; Wait key press so that I can see debug log before move to protect mode
-	cdecl puts, .ask_for_protect_mode_msg
-	mov	ah, 0x00
-	int	0x16
-
-	; Update vide mode
-	mov	ax, 0x0012	; VGA 640x480
-	int	0x10
-
-	jmp stage_move_protect_mode
-
-
-.get_drive_param_fail:
-	cdecl 	puts, .get_drive_param_fail_msg
-	jmp	.fin
-
-
-.load_kernel_fail:
+.fail:
 	cdecl 	puts, .load_kernel_fail_msg
-	jmp	.fin
-
-	; loop
-.fin:
 	jmp	$
 
-;-------------------
-; Enable A20 gate
-;-------------------
 .enable_a20:
 
 	push	bp
@@ -175,7 +169,6 @@ bootmon:
 
 	ret
 
-
 ; wait until writable
 .waitkbdout:
 	in	al, 0x64
@@ -183,10 +176,26 @@ bootmon:
 	jnz	.waitkbdout ; if not writable, loop
 	ret
 
-.enter_msg	db "bootmon started", 0x0a, 0x0d, 0
-.enable_a20_finish		db "A20 gate enabled", 0x0a, 0x0d, 0
-.get_drive_param_fail_msg	db "Failed to get drive param", 0x0a, 0x0d, 0
-.load_kernel_fail_msg		db "Failed to load kernel", 0x0a, 0x0d, 0
+
+.enter_msg		db "stage_load_kernel: Enable A20 gate and load kernel", 0x0a, 0x0d, 0
+.enable_a20_success_msg	db "stage_load_kernel: Enabled A20 gate", 0x0a, 0x0d, 0
+.load_kernel_fail_msg	db "stage_load_kernel: Failed to load kernel", 0x0a, 0x0d, 0
+
+;------------------------------------
+; stage: update video mode
+;------------------------------------
+stage_video_mode:
+	; Wait key press so that I can see debug log before move to protect mode
+	cdecl puts, .ask_for_protect_mode_msg
+	mov	ah, 0x00
+	int	0x16
+
+	; Update video mode
+	mov	ax, 0x0012	; VGA 640x480
+	int	0x10
+
+	jmp stage_move_protect_mode
+
 .ask_for_protect_mode_msg	db "Push Key to move protect mode...", 0x0a, 0x0d, 0
 
 
@@ -195,6 +204,16 @@ GDT:			dq	0x00_0_0_0_0_000000_0000	; NULL
 .cs:			dq	0x00_C_F_9_A_000000_FFFF	; CODE 4G
 .ds:			dq	0x00_C_F_9_2_000000_FFFF	; DATA 4G
 .gdt_end:
+
+SEL_CODE	equ	.cs - GDT	; segment reg value to use code segment
+SEL_DATA	equ	.ds - GDT	; segment reg value to use data segment
+
+GDTR:	dw	GDT.gdt_end - GDT - 1
+	dd	GDT
+
+
+IDTR:	dw	0
+	dd	0
 
 ; Segment descriptor
 ;---------------------------------------------------------------------------------------
@@ -217,15 +236,9 @@ GDT:			dq	0x00_0_0_0_0_000000_0000	; NULL
 ;  	: 110(6)=R/- CONFORM
 ;  	: 111(7)=R/W CONFORM
 
-GDTR:	dw	GDT.gdt_end - GDT - 1
-	dd	GDT
-
-SEL_CODE	equ	GDT.cs - GDT	; segment reg value to use code segment
-SEL_DATA	equ	GDT.ds - GDT	; segment reg value to use data segment
-
-IDTR:	dw	0
-	dd	0
-
+;----------------------------------------------
+; stage: enter protect mode and jump to kernel
+;----------------------------------------------
 stage_move_protect_mode:
 	; Move to protect mode
 	cli
