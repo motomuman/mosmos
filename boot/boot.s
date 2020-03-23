@@ -122,14 +122,12 @@ bootmon:
 	mov	ah, 0x00
 	int	0x16
 
+	; Update vide mode
 	mov	ax, 0x0012	; VGA 640x480
 	int	0x10
 
+	jmp stage_move_protect_mode
 
-	; temporarily jump to kernel before relocation/32bit
-	jmp	BOOT_END
-
-	jmp	.fin
 
 .get_drive_param_fail:
 	cdecl 	puts, .get_drive_param_fail_msg
@@ -190,3 +188,74 @@ bootmon:
 .get_drive_param_fail_msg	db "Failed to get drive param", 0x0a, 0x0d, 0
 .load_kernel_fail_msg		db "Failed to load kernel", 0x0a, 0x0d, 0
 .ask_for_protect_mode_msg	db "Push Key to move protect mode...", 0x0a, 0x0d, 0
+
+
+ALIGN 4, db 0
+GDT:			dq	0x00_0_0_0_0_000000_0000	; NULL
+.cs:			dq	0x00_C_F_9_A_000000_FFFF	; CODE 4G
+.ds:			dq	0x00_C_F_9_2_000000_FFFF	; DATA 4G
+.gdt_end:
+
+; Segment descriptor
+;---------------------------------------------------------------------------------------
+;| base [31-24] | G | D | AVL | P | DPL | DT | Type | Base [23 - 0 ] | limite [15 - 0] |
+;---------------------------------------------------------------------------------------
+; base 	: memory range start
+; limit	: memory range end
+; G	: Granularity bit. If 1 the limit 4K
+; D	: If 1 32 bit segment
+; AVL	: any val
+; P	: presence. If 1 keep on memory
+; DPL	: Priviledge level
+; DT	: memory segment
+; Type	: 000(0)=R/- DATA
+;  	: 001(1)=R/W DATA
+;  	: 010(2)=R/- STACK
+;  	: 011(3)=R/W STACK
+;  	: 100(4)=R/- CODE
+;  	: 101(5)=R/W CODE
+;  	: 110(6)=R/- CONFORM
+;  	: 111(7)=R/W CONFORM
+
+GDTR:	dw	GDT.gdt_end - GDT - 1
+	dd	GDT
+
+SEL_CODE	equ	GDT.cs - GDT	; segment reg value to use code segment
+SEL_DATA	equ	GDT.ds - GDT	; segment reg value to use data segment
+
+IDTR:	dw	0
+	dd	0
+
+stage_move_protect_mode:
+	; Move to protect mode
+	cli
+	lgdt	[GDTR]
+	lidt	[IDTR]
+	mov	eax,cr0
+	or	ax, 1
+	mov	cr0, eax
+
+	jmp	$ + 2		; jump to discard prefetch
+
+
+[BITS 32]
+	db	0x66
+	jmp	SEL_CODE:CODE_32
+
+CODE_32:
+	; Initialize selectors
+	mov	ax, SEL_DATA
+	mov	ds, ax
+	mov	es, ax
+	mov	fs, ax
+	mov	gs, ax
+	mov	ss, ax
+
+	mov	ecx, (KERNEL_SIZE) / 4
+	mov	esi, BOOT_END
+	mov	edi, KERNEL_LOAD
+	cld
+	rep 	movsd
+	jmp	KERNEL_LOAD
+
+	times 	BOOT_SIZE - ($ - $$)	db	0
