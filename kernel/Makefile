@@ -1,19 +1,20 @@
-OBJS_KERNEL = kernel.o kasm.o
+# Order is important?
+# first object binary comes to first in kernel.
+# kasm has entry point and call kernel start in kernel.c.
+# So I need to put kasm first.
+OBJS_KERNEL = kasm.o kernel.o
 
-ASM = nasm
-CC	= gcc
+AS = nasm
+CC = gcc
 
-CFLAGS  =  -Wall -m32 -fleading-underscore
-K_OPTION = -Wall -nostdlib #-fno-common  -fomit-frame-pointer -fno-builtin -ffreestanding
-
-kasm.o: kasm.s
-	$(ASM) kasm.s -o kasm.o -l kasm.lst -f elf
+ASFLAGS = -f elf
+CFLAGS  =  -Wall -m32 -fleading-underscore -g
 
 kernel: $(OBJS_KERNEL)
-	gcc $^ -o $@ -Wall $(K_OPTION) -O2 -Wl,-T kernel.ld
+	$(LD) -N -T kernel.ld -o $@ $^
 
 clean:
-	rm -rf *.img *.lst *.o
+	rm -rf *.img *.lst *.o kernel
 
 # gcc options I thought related
 # (descriptions are picked from gcc man page)
