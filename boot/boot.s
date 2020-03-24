@@ -38,7 +38,7 @@ ipl:
 	jnz	.fail
 	JMP	stage_get_drive_param
 
-.fail
+.fail:
 	; Faled to load next stages
 	cdecl puts, .load_error_msg
 	jmp	$

@@ -1,7 +1,7 @@
 ASM = nasm
 
-boot.o: boot.s
-	$(ASM) boot.s -o boot.o -l boot.lst
+boot: boot.s
+	$(ASM) boot.s -o boot -l boot.lst
 
 clean:
-	rm -rf *.img *.lst *.o
+	rm -rf *.img *.lst *.o boot
