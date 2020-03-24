@@ -2,13 +2,13 @@
 # first object binary comes to first in kernel.
 # kasm has entry point and call kernel start in kernel.c.
 # So I need to put kasm first.
-OBJS_KERNEL = kasm.o kernel.o
+OBJS_KERNEL = kasm.o kernel.o print.o
 
 AS = nasm
 CC = gcc
 
 ASFLAGS = -f elf
-CFLAGS  =  -Wall -m32 -fleading-underscore -g -fno-builtin
+CFLAGS  = -I . -Wall -m32 -g -fleading-underscore -fno-builtin -nostdlib
 
 kernel: $(OBJS_KERNEL)
 	$(LD) -N -T kernel.ld -o $@ $^
