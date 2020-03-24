@@ -8,7 +8,7 @@ AS = nasm
 CC = gcc
 
 ASFLAGS = -f elf
-CFLAGS  =  -Wall -m32 -fleading-underscore -g
+CFLAGS  =  -Wall -m32 -fleading-underscore -g -fno-builtin
 
 kernel: $(OBJS_KERNEL)
 	$(LD) -N -T kernel.ld -o $@ $^
