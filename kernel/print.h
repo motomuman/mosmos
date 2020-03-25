@@ -3,5 +3,6 @@
 
 void printstr(char *str);
 void printnum(int num);
+void initscreen();
 
 #endif
