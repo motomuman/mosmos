@@ -24,10 +24,6 @@ kentry:
 	mov	[_FONT_ADR], eax
 
 	call 	init_int
-	call	init_pic
-	outp	0x21, 0b_1111_1101	; enable keyboard interruption
-
-	sti
 
 	call 	_kstart
 
@@ -68,27 +64,6 @@ init_int:
 	pop	edi
 	pop	ecx
 	pop	ebx
-	pop	eax
-
-	ret
-
-init_pic:
-	push	eax
-
-	; master config
-	outp	0x20, 0x11
-	outp	0x21, 0x20
-	outp	0x21, 0x04
-	outp	0x21, 0x05
-	outp	0x21, 0xFF
-
-	; slave config
-	outp	0xa0, 0x11
-	outp	0xa1, 0x28
-	outp	0xa1, 0x02
-	outp	0xa1, 0x01
-	outp	0xa1, 0xFF
-
 	pop	eax
 
 	ret

@@ -1,5 +1,6 @@
 global _io_in8
 global _io_out8
+global _io_sti
 global _hlt
 
 [BITS 32]
@@ -15,8 +16,11 @@ _io_out8:	; void io_out8(int port, int data)
 	out	dx, al
 	ret
 
+_io_sti:
+	sti
+	ret
+
 _hlt:
 	hlt
 	ret
-
 

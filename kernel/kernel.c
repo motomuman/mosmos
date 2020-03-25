@@ -1,11 +1,12 @@
 #include "print.h"
 #include "nasmfunk.h"
+#include "int.h"
 
 void hlt();
 int *FONT_ADR;
 
 void int_keyboard(int *esp) {
-	char data;
+	unsigned char data;
 	data = io_in8(0x0060);
 	io_out8(0x20, 0x20);
 	printnum(data);
@@ -15,6 +16,8 @@ void int_keyboard(int *esp) {
 
 void kstart(void)
 {
+	init_pic();
+	io_sti();
 	initscreen();
 
 	while(1){

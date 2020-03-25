@@ -3,5 +3,6 @@
 
 int io_in8(int port);
 int io_out8(int port, int data);
+void io_sti();
 
 #endif
