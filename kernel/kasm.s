@@ -4,10 +4,9 @@ section .text
 
 global kentry
 global _hlt
+global _FONT_ADR
 
 extern _kstart
-
-FONT_ADR	EQU	0x0010_0000
 
 kentry:
 	; Save font addr
@@ -16,10 +15,12 @@ kentry:
 	movzx	ebx, word [esi + 2]
 	shl	eax, 4
 	add 	eax, ebx
-	mov	[FONT_ADR], eax
+	mov	[_FONT_ADR], eax
 
 	call 	_kstart
 
 _hlt:
 	hlt
 	ret
+
+_FONT_ADR: dd 0

@@ -21,9 +21,21 @@
 //                 |      |
 //                 |      |
 //                 |      |
+//
 
-int x;
-int y;
+int FONT_ADR;
+int x; int y;
+
+void initscreen() {
+	int tmpx = x;
+	int tmpy = y;
+	x = 0;
+	y = 0;
+	printnum(tmpx);
+	printstr("\n");
+	printnum(tmpy);
+	printstr("\n");
+}
 
 void clear() {
 	int i;
@@ -54,7 +66,7 @@ void putchar(char ch) {
 	} else {
 		int i;
 		int vaddr = 0xa0000 + (80 * 16 * y) + x;
-		char *chaddr = (char *)((*(int *)0x00100000) + (ch<<4));
+		char *chaddr = (char *)(FONT_ADR + (ch<<4));
 
 		for (i = 0; i < 16; i++){
 			*(char *)vaddr = (*chaddr);
@@ -80,6 +92,11 @@ void printnum(int num) {
 	}
 	char buf[50];
 	int len = 0;
+	int neg = 0;
+	if(num < 0) {
+		neg = 1;
+		num = -num;
+	}
 	while(num > 0){
 		int digit = num % 10;
 		buf[len] = '0' + digit;
@@ -88,9 +105,13 @@ void printnum(int num) {
 	}
 	len--;
 
-	int i;
+	int i = 0;
 	char printbuf[50];
-	for(i = 0; i <= len; i++){
+	if(neg) {
+		printbuf[0] = '-';
+		i = 1;
+	}
+	for(; i <= len; i++){
 		printbuf[i] = buf[len - i];
 	}
 	printbuf[i] = 0;
