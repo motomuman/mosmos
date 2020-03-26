@@ -1,4 +1,4 @@
-#include "nasmfunk.h"
+#include "nasmfunc.h"
 
 void init_pic(void)
 {

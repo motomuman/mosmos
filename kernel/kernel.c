@@ -1,8 +1,8 @@
 #include "print.h"
-#include "nasmfunk.h"
+#include "nasmfunc.h"
 #include "int.h"
+#include "dsctbl.h"
 
-void hlt();
 int *FONT_ADR;
 
 void int_keyboard(int *esp) {
@@ -16,6 +16,7 @@ void int_keyboard(int *esp) {
 
 void kstart(void)
 {
+	init_gdtidt();
 	init_pic();
 	io_sti();
 	initscreen();

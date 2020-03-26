@@ -22,6 +22,7 @@ KERNEL_SECT	equ	(KERNEL_SIZE/SECT_SIZE)
 ; mbr + boot: 		0x00007c00 - 0x00009c00
 ; kernel(initial):	0x00009c00 - 0x0000bc00
 ; ....
+; intrupption vec: 	0x00100000 - 0x001007ff
 ; kernel(relocated): 	0x00101000 - 0x00103000
 
 struc drive

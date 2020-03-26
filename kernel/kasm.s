@@ -6,13 +6,6 @@ global kentry
 global _FONT_ADR
 
 extern _kstart
-extern _int_keyboard
-
-%macro outp 2
-	mov	al, %2
-	out	%1, al
-%endmacro
-
 
 kentry:
 	; Save font addr
@@ -23,66 +16,6 @@ kentry:
 	add 	eax, ebx
 	mov	[_FONT_ADR], eax
 
-	call 	init_int
-
 	call 	_kstart
-
-
-VECT_BASE	equ	0x0010_0000	;0010_0000:0010_07FF
-
-; interrupt vector
-ALIGN 4
-IDTR:	dw	8*256 - 1
-	dd	VECT_BASE
-
-init_int:
-	;save regs
-	push 	eax
-	push	ebx
-	push	ecx
-	push	edi
-
-	; Interrupt descriptor
-	;63                  |47     45          40       32|                  |15          0
-	; ----------------------------------------------------------------------------------+
-	; |    offset (H)    | P | DPL | DT | Type |        | Segment selector | offset (L) |
-	; ----------------------------------------------------------------------------------+
-	; int_handler[31:16] |      8       |   E  |  0 | 0 | 0 | 0 | 0 |  8   | int_handler[15:0]
-
-	lea	eax, [int_keyboard]	; EAX = addr of int_keyboard
-	mov	ebx, 0x008_8E00		; ebx = segment selector
-					; 0008 <- kernel segment (first segment)
-	xchg	ax, bx			; exchange lower word
-
-	mov	[VECT_BASE + 8 * 0x21 + 0], ebx		; lower interrupt vectors
-	mov	[VECT_BASE + 8 * 0x21 + 4], eax		; higher interrupt vectors
-							; key board vector 0x21
-
-	lidt	[IDTR]
-
-	;restore regs
-	pop	edi
-	pop	ecx
-	pop	ebx
-	pop	eax
-
-	ret
-
-int_keyboard:
-	pusha
-	push	ds
-	push	es
-
-	mov	ax, 0x0010
-	mov	ds, ax
-	mov	es, ax
-
-	call 	_int_keyboard
-
-	pop	es
-	pop	ds
-	popa
-
-	iret
 
 _FONT_ADR: dd 0
