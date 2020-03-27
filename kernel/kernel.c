@@ -2,8 +2,10 @@
 #include "nasmfunc.h"
 #include "int.h"
 #include "dsctbl.h"
+#include "fifo.h"
 
 int *FONT_ADR;
+struct FIFO8 keyfifo;
 
 struct TSS32 {
 	int backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
@@ -14,11 +16,10 @@ struct TSS32 {
 
 void int_keyboard(int *esp) {
 	unsigned char data;
-	data = io_in8(0x0060);
-	io_out8(0x20, 0x20);
-	printstr("keyint: ");
-	printnum(data);
-	printstr("\n");
+	io_out8(0x20, 0x20);	// End of Interrupt command
+	data = io_in8(0x0060);	// get input key code
+	printstr("keyint\n");
+	fifo8_put(&keyfifo, data);
 	return;
 }
 
@@ -70,16 +71,20 @@ void kstart(void)
 	tss_b.fs = 2 * 8;
 	tss_b.gs = 2 * 8;
 
+	unsigned char keybuf[32];
+	fifo8_init(&keyfifo, 32, keybuf);
 
 	int i;
-	while(1) {
-		for(i = 0; i < 20000000; i++){
-		}
-		printstr("task_a_main\n");
-		taskswitch4();
-	}
-
 	while(1){
-		hlt();
+		io_cli();
+		if(fifo8_status(&keyfifo) == 0) {
+			io_stihlt();
+		} else {
+			i = fifo8_get(&keyfifo);
+			io_sti();
+			printhex(i);
+			printstr("\n");
+			taskswitch4();
+		}
 	}
 }

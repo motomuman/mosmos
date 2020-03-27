@@ -1,7 +1,9 @@
 global _io_in8
 global _io_out8
+global _io_cli
 global _io_sti
-global _hlt
+global _io_hlt
+global _io_stihlt
 global _asm_int_keyboard
 global _load_idtr
 global _load_gdtr
@@ -24,11 +26,20 @@ _io_out8:	; void io_out8(int port, int data)
 	out	dx, al
 	ret
 
+_io_cli:
+	cli
+	ret
+
 _io_sti:
 	sti
 	ret
 
-_hlt:
+_io_hlt:
+	hlt
+	ret
+
+_io_stihlt:
+	sti
 	hlt
 	ret
 
