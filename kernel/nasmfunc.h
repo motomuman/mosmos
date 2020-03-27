@@ -13,5 +13,6 @@ void load_tr(int tr);
 void taskswitch3();
 void taskswitch4();
 void asm_int_keyboard();
+void asm_int_pit();
 
 #endif

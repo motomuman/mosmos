@@ -19,6 +19,7 @@ void init_gdtidt()
 	}
 	load_idtr(LIMIT_IDT, ADR_IDT);
 
+	set_gatedesc(idt + 0x20, (int) asm_int_pit, 8, 0x008e);
 	set_gatedesc(idt + 0x21, (int) asm_int_keyboard, 8, 0x008e);
 }
 

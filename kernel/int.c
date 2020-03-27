@@ -15,5 +15,5 @@ void init_pic(void)
 	io_out8(0xa1, 0x02);
 	io_out8(0xa1, 0x01);
 	io_out8(0xa1, 0xFF);
-	io_out8(0x21, 0b11111101); //enable keyboard interruption
+	io_out8(0x21, 0b11111100); //enable keyboard/PIT interruption
 }

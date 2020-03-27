@@ -3,6 +3,7 @@
 #include "int.h"
 #include "dsctbl.h"
 #include "fifo.h"
+#include "timer.h"
 
 int *FONT_ADR;
 struct FIFO8 keyfifo;
@@ -23,6 +24,16 @@ void int_keyboard(int *esp) {
 	return;
 }
 
+int pitnum;
+void int_pit(int *esp) {
+	io_out8(0x20, 0x20);	// End of Interrupt command
+	pitnum++;
+	if(pitnum%200 == 0) {
+		printstr("pit%200 = 0\n");
+	}
+	return;
+}
+
 void task_b_main() {
 	int i;
 	while(1) {
@@ -38,6 +49,7 @@ void kstart(void)
 	init_gdtidt();
 	init_pic();
 	io_sti();
+	init_pit();
 	initscreen();
 
 	struct TSS32 tss_a, tss_b;

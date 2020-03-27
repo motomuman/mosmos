@@ -5,6 +5,7 @@ global _io_sti
 global _io_hlt
 global _io_stihlt
 global _asm_int_keyboard
+global _asm_int_pit
 global _load_idtr
 global _load_gdtr
 global _load_tr
@@ -12,6 +13,7 @@ global _taskswitch3
 global _taskswitch4
 
 extern _int_keyboard
+extern _int_pit
 
 [BITS 32]
 _io_in8:	; int io_in8(int port)
@@ -53,6 +55,23 @@ _asm_int_keyboard:
 	mov	es, ax
 
 	call 	_int_keyboard
+
+	pop	es
+	pop	ds
+	popa
+
+	iret
+
+_asm_int_pit:
+	pusha
+	push	ds
+	push	es
+
+	mov	ax, 0x0010
+	mov	ds, ax
+	mov	es, ax
+
+	call 	_int_pit
 
 	pop	es
 	pop	ds
