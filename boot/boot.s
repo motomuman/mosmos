@@ -199,6 +199,7 @@ stage_video_mode:
 .ask_for_protect_mode_msg	db "Push Key to move protect mode...", 0x0a, 0x0d, 0
 
 
+; check description in kernel/ksctbl.c
 ALIGN 4, db 0
 GDT:			dq	0x00_0_0_0_0_000000_0000	; NULL
 .cs:			dq	0x00_C_F_9_A_000000_FFFF	; CODE 4G
@@ -214,27 +215,6 @@ GDTR:	dw	GDT.gdt_end - GDT - 1
 
 IDTR:	dw	0
 	dd	0
-
-; Segment descriptor
-;---------------------------------------------------------------------------------------
-;| base [31-24] | G | D | AVL | P | DPL | DT | Type | Base [23 - 0 ] | limite [15 - 0] |
-;---------------------------------------------------------------------------------------
-; base 	: memory range start
-; limit	: memory range end
-; G	: Granularity bit. If 1 the limit 4K
-; D	: If 1 32 bit segment
-; AVL	: any val
-; P	: presence. If 1 keep on memory
-; DPL	: Priviledge level
-; DT	: memory segment
-; Type	: 000(0)=R/- DATA
-;  	: 001(1)=R/W DATA
-;  	: 010(2)=R/- STACK
-;  	: 011(3)=R/W STACK
-;  	: 100(4)=R/- CODE
-;  	: 101(5)=R/W CODE
-;  	: 110(6)=R/- CONFORM
-;  	: 111(7)=R/W CONFORM
 
 ;----------------------------------------------
 ; stage: enter protect mode and jump to kernel

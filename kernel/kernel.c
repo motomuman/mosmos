@@ -5,13 +5,31 @@
 
 int *FONT_ADR;
 
+struct TSS32 {
+	int backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
+	int eip, eflags, eax, ecx, edx, ebx, esp, ebp, esi, edi;
+	int es, cs, ss, ds, fs, gs;
+	int ldtr, iomap;
+};
+
 void int_keyboard(int *esp) {
 	unsigned char data;
 	data = io_in8(0x0060);
 	io_out8(0x20, 0x20);
+	printstr("keyint: ");
 	printnum(data);
 	printstr("\n");
 	return;
+}
+
+void task_b_main() {
+	int i;
+	while(1) {
+		for(i = 0; i < 20000000; i++){
+		}
+		printstr("task_b_main\n");
+		taskswitch3();
+	}
 }
 
 void kstart(void)
@@ -20,6 +38,46 @@ void kstart(void)
 	init_pic();
 	io_sti();
 	initscreen();
+
+	struct TSS32 tss_a, tss_b;
+
+	tss_a.ldtr = 0;
+	tss_a.iomap = 0x40000000;
+	tss_b.ldtr = 0;
+	tss_b.iomap = 0x40000000;
+
+	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *) ADR_GDT;
+	// 103: limit (bytes of tss - 1)
+	set_segmdesc(gdt + 3, 103, (int) &tss_a, AR_TSS32);
+	set_segmdesc(gdt + 4, 103, (int) &tss_b, AR_TSS32);
+
+	load_tr(3 * 8);	// Currently running on task3
+
+	tss_b.eip = (int) &task_b_main;
+	tss_b.eflags = 0x00000202; /* IF = 1; */
+	tss_b.eax = 0;
+	tss_b.ecx = 0;
+	tss_b.edx = 0;
+	tss_b.ebx = 0;
+	tss_b.esp  = 0x00080000;
+	tss_b.ebp = 0;
+	tss_b.esi = 0;
+	tss_b.edi = 0;
+	tss_b.es = 2 * 8;
+	tss_b.cs = 1 * 8;
+	tss_b.ss = 2 * 8;
+	tss_b.ds = 2 * 8;
+	tss_b.fs = 2 * 8;
+	tss_b.gs = 2 * 8;
+
+
+	int i;
+	while(1) {
+		for(i = 0; i < 20000000; i++){
+		}
+		printstr("task_a_main\n");
+		taskswitch4();
+	}
 
 	while(1){
 		hlt();

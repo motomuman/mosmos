@@ -117,3 +117,29 @@ void printnum(int num) {
 	printbuf[i] = 0;
 	printstr(printbuf);
 }
+
+void printhex(int num) {
+	char buf[50];
+	int len = 0;
+	while(num > 0){
+		int digit = num & 0x0f;
+		if(digit < 10) {
+			buf[len] = '0' + digit;
+		} else {
+			buf[len] = 'a' + digit - 10;
+		}
+		len++;
+		num = num >> 4;
+	}
+	buf[len] = 'x';
+	len++;
+	buf[len] = '0';
+
+	int i;
+	char printbuf[50];
+	for(i = 0; i <= len; i++){
+		printbuf[i] = buf[len - i];
+	}
+	printbuf[i] = 0;
+	printstr(printbuf);
+}

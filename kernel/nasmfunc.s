@@ -4,6 +4,10 @@ global _io_sti
 global _hlt
 global _asm_int_keyboard
 global _load_idtr
+global _load_gdtr
+global _load_tr
+global _taskswitch3
+global _taskswitch4
 
 extern _int_keyboard
 
@@ -56,4 +60,30 @@ _load_idtr:
 	mov	ax,[esp+4]
 	mov	[esp+6],ax
 	lidt	[esp+6]
+	ret
+
+; void load_gdtr(int limit, int addr)
+; ESP + 4: limit
+; ESP + 8: addr
+;
+; lgdt loads data to gdtr register (48bit)
+; lower 16 bit of idtr (first 2byte): limit
+; higher 32 bit of idtr (first 2byte): addr for IDTR data
+_load_gdtr:
+	mov	ax,[esp+4]
+	mov	[esp+6],ax
+	lgdt	[esp+6]
+	ret
+
+; void load_tr(int tr);
+_load_tr:
+	ltr	[esp+4]
+	ret
+
+_taskswitch4:
+	JMP	4*8:0
+	ret
+
+_taskswitch3:
+	JMP	3*8:0
 	ret
