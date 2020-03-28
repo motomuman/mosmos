@@ -30,15 +30,13 @@ int pitnum;
 void int_pit(int *esp) {
 	io_out8(0x20, 0x20);	// End of Interrupt command
 	pitnum++;
-	if(pitnum%200 == 0) {
-		if(current_task == 3) {
-			current_task = 4;
-			taskswitch4();
-		} else {
+	if(pitnum%100 == 0) {
+		current_task++;
+		if(current_task == 5) {
 			current_task = 3;
-			taskswitch3();
 		}
-		printstr("pit%200 = 0\n");
+		farjmp(0, current_task * 8);
+		printstr("pit%100 = 0\n");
 	}
 	return;
 }

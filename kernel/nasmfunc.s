@@ -13,8 +13,7 @@ global _load_gdtr
 global _load_tr
 global _load_cr0
 global _store_cr0
-global _taskswitch3
-global _taskswitch4
+global _farjmp
 global _memtest_sub
 
 extern _int_keyboard
@@ -115,12 +114,9 @@ _load_tr:
 	ltr	[esp+4]
 	ret
 
-_taskswitch4:
-	JMP	4*8:0
-	ret
-
-_taskswitch3:
-	JMP	3*8:0
+; taskswitch(int eip, int cs)
+_farjmp:
+	jmp	far [esp+4]
 	ret
 
 _memtest_sub:	; unsigned int memtest_sub(unsigned int start, unsigned int end)
