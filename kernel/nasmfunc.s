@@ -4,13 +4,18 @@ global _io_cli
 global _io_sti
 global _io_hlt
 global _io_stihlt
+global _io_load_eflags
+global _io_store_eflags
 global _asm_int_keyboard
 global _asm_int_pit
 global _load_idtr
 global _load_gdtr
 global _load_tr
+global _load_cr0
+global _store_cr0
 global _taskswitch3
 global _taskswitch4
+global _memtest_sub
 
 extern _int_keyboard
 extern _int_pit
@@ -116,4 +121,56 @@ _taskswitch4:
 
 _taskswitch3:
 	JMP	3*8:0
+	ret
+
+_memtest_sub:	; unsigned int memtest_sub(unsigned int start, unsigned int end)
+	;save regs
+	push	edi
+	push	esi
+	push	ebx
+	mov	esi, 0xaa55aa55
+	mov	edi, 0x55aa55aa
+	mov	eax, [esp + 12 + 4] ; 12(edi,esi,ebx) + 4
+.loop:
+	mov	ebx, eax
+	add	ebx, 0xffc
+	mov	edx, [ebx] ; edx = *p (save old value)
+	mov	[ebx], esi
+	xor 	dword [ebx], 0xffffffff
+	cmp	edi, [ebx]
+	jne	.fin
+	xor	dword [ebx], 0xffffffff
+	cmp	esi, [ebx]
+	jne	.fin
+	mov	[ebx], edx ; *p = edx (restore old value)
+	add	eax, 0x10000
+	cmp	eax, [esp + 12 + 8]
+	jbe	.loop
+	jmp	.allpass
+.fin
+	mov	[ebx], edx  ; *p = edx (restore old value)
+.allpass
+	pop	ebx
+	pop	esi
+	pop	edi
+	ret
+
+_load_cr0:
+	mov	eax, cr0
+	ret
+
+_store_cr0:
+	mov	eax,[esp+4]
+	mov	cr0, eax
+	ret
+
+_io_store_eflags:
+	mov	eax,[esp+4]
+	push	eax
+	popfd
+	ret
+
+_io_load_eflags:
+	pushfd
+	pop	eax
 	ret

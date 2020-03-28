@@ -4,6 +4,7 @@
 #include "dsctbl.h"
 #include "fifo.h"
 #include "timer.h"
+#include "memory.h"
 
 int *FONT_ADR;
 struct FIFO8 keyfifo;
@@ -29,16 +30,16 @@ int pitnum;
 void int_pit(int *esp) {
 	io_out8(0x20, 0x20);	// End of Interrupt command
 	pitnum++;
-	if(pitnum%200 == 0) {
-		if(current_task == 3) {
-			current_task = 4;
-			taskswitch4();
-		} else {
-			current_task = 3;
-			taskswitch3();
-		}
-		printstr("pit%200 = 0\n");
-	}
+	//if(pitnum%200 == 0) {
+	//	if(current_task == 3) {
+	//		current_task = 4;
+	//		taskswitch4();
+	//	} else {
+	//		current_task = 3;
+	//		taskswitch3();
+	//	}
+	//	printstr("pit%200 = 0\n");
+	//}
 	return;
 }
 
@@ -58,6 +59,15 @@ void kstart(void)
 	io_sti();
 	init_pit();
 	initscreen();
+	// Check memory size(start: 0x00400000, end: 0xffffffff)
+	int memsize = memtest(0x00400000, 0xffffffff);
+	printstr("memory: ");
+	printnum(memsize/1024/1024);
+	printstr(" MB\n");
+	while(1) {
+		io_hlt();
+	}
+
 
 	struct TSS32 tss_a, tss_b;
 
