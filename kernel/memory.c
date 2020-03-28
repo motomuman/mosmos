@@ -1,5 +1,6 @@
 #include "nasmfunc.h"
 #include "memory.h"
+#include "print.h"
 
 #define MAX_MEMSIZE 2000
 
@@ -43,6 +44,14 @@ unsigned int mem_alloc1m() {
 	}
 	mem.len--;
 	return mem.addr[mem.len];
+}
+
+unsigned int mem_alloc(unsigned int request) {
+	if (request > 1024 * 1024) {
+		printstr("ERROR: large memory req\n");
+		return 0;
+	}
+	return mem_alloc1m();
 }
 
 int mem_free_size() {

@@ -5,17 +5,10 @@
 #include "fifo.h"
 #include "timer.h"
 #include "memory.h"
+#include "task.h"
 
 int *FONT_ADR;
 struct FIFO8 keyfifo;
-
-int current_task;
-struct TSS32 {
-	int backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
-	int eip, eflags, eax, ecx, edx, ebx, esp, ebp, esi, edi;
-	int es, cs, ss, ds, fs, gs;
-	int ldtr, iomap;
-};
 
 void int_keyboard(int *esp) {
 	unsigned char data;
@@ -31,12 +24,9 @@ void int_pit(int *esp) {
 	io_out8(0x20, 0x20);	// End of Interrupt command
 	pitnum++;
 	if(pitnum%100 == 0) {
-		current_task++;
-		if(current_task == 5) {
-			current_task = 3;
-		}
-		farjmp(0, current_task * 8);
-		printstr("pit%100 = 0\n");
+		printstr("task_switch: ");
+		task_show();
+		task_switch();
 	}
 	return;
 }
@@ -44,9 +34,18 @@ void int_pit(int *esp) {
 void task_b_main() {
 	int i;
 	while(1) {
-		for(i = 0; i < 20000000; i++){
+		for(i = 0; i < 80000000; i++){
 		}
 		printstr("task_b_main\n");
+	}
+}
+
+void task_c_main() {
+	int i;
+	while(1) {
+		for(i = 0; i < 80000000; i++){
+		}
+		printstr("task_c_main\n");
 	}
 }
 
@@ -71,60 +70,33 @@ void kstart(void)
 	printnum(mem_free_size());
 	printstr(" MB\n");
 
-	int *test = (int *) mem_alloc1m();
-	printstr("alloc address: ");
-	printhex((int)test);
-	printstr("\n");
+	struct TASK *task_b;
+	struct TASK *task_c;
+	task_init();
+	task_b = task_alloc();
+	task_b->tss.eip = (int) &task_b_main;
+	task_run(task_b);
 
-	printstr("free memory: ");
-	printnum(mem_free_size());
-	printstr(" MB\n");
-
-	struct TSS32 tss_a, tss_b;
-
-	tss_a.ldtr = 0;
-	tss_a.iomap = 0x40000000;
-	tss_b.ldtr = 0;
-	tss_b.iomap = 0x40000000;
-
-	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *) ADR_GDT;
-	// 103: limit (bytes of tss - 1)
-	set_segmdesc(gdt + 3, 103, (int) &tss_a, AR_TSS32);
-	set_segmdesc(gdt + 4, 103, (int) &tss_b, AR_TSS32);
-
-	load_tr(3 * 8);	// Currently running on task3
-	current_task = 3;
-
-	tss_b.eip = (int) &task_b_main;
-	tss_b.eflags = 0x00000202; /* IF = 1; */
-	tss_b.eax = 0;
-	tss_b.ecx = 0;
-	tss_b.edx = 0;
-	tss_b.ebx = 0;
-	tss_b.esp  = mem_alloc1m() + (1024 * 1024);
-	tss_b.ebp = 0;
-	tss_b.esi = 0;
-	tss_b.edi = 0;
-	tss_b.es = 2 * 8;
-	tss_b.cs = 1 * 8;
-	tss_b.ss = 2 * 8;
-	tss_b.ds = 2 * 8;
-	tss_b.fs = 2 * 8;
-	tss_b.gs = 2 * 8;
+	task_c = task_alloc();
+	task_c->tss.eip = (int) &task_c_main;
+	task_run(task_c);
 
 	unsigned char keybuf[32];
 	fifo8_init(&keyfifo, 32, keybuf);
 
 	int i;
 	while(1){
-		io_cli();
-		if(fifo8_status(&keyfifo) == 0) {
-			io_stihlt();
-		} else {
-			i = fifo8_get(&keyfifo);
-			io_sti();
-			printhex(i);
-			printstr("\n");
+		for(i = 0; i < 80000000; i++){
 		}
+		printstr("task_a_main\n");
+		//io_cli();
+		//if(fifo8_status(&keyfifo) == 0) {
+		//	io_stihlt();
+		//} else {
+		//	i = fifo8_get(&keyfifo);
+		//	io_sti();
+		//	printhex(i);
+		//	printstr("\n");
+		//}
 	}
 }
