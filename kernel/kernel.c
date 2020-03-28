@@ -30,16 +30,16 @@ int pitnum;
 void int_pit(int *esp) {
 	io_out8(0x20, 0x20);	// End of Interrupt command
 	pitnum++;
-	//if(pitnum%200 == 0) {
-	//	if(current_task == 3) {
-	//		current_task = 4;
-	//		taskswitch4();
-	//	} else {
-	//		current_task = 3;
-	//		taskswitch3();
-	//	}
-	//	printstr("pit%200 = 0\n");
-	//}
+	if(pitnum%200 == 0) {
+		if(current_task == 3) {
+			current_task = 4;
+			taskswitch4();
+		} else {
+			current_task = 3;
+			taskswitch3();
+		}
+		printstr("pit%200 = 0\n");
+	}
 	return;
 }
 
@@ -59,15 +59,28 @@ void kstart(void)
 	io_sti();
 	init_pit();
 	initscreen();
+
 	// Check memory size(start: 0x00400000, end: 0xffffffff)
 	int memsize = memtest(0x00400000, 0xffffffff);
-	printstr("memory: ");
+	mem_init();
+	mem_free1m_batch(0x00200000, memsize - 0x00200000);
+
+	printstr("total memory: ");
 	printnum(memsize/1024/1024);
 	printstr(" MB\n");
-	while(1) {
-		io_hlt();
-	}
 
+	printstr("free memory: ");
+	printnum(mem_free_size());
+	printstr(" MB\n");
+
+	int *test = (int *) mem_alloc1m();
+	printstr("alloc address: ");
+	printhex((int)test);
+	printstr("\n");
+
+	printstr("free memory: ");
+	printnum(mem_free_size());
+	printstr(" MB\n");
 
 	struct TSS32 tss_a, tss_b;
 
@@ -90,7 +103,7 @@ void kstart(void)
 	tss_b.ecx = 0;
 	tss_b.edx = 0;
 	tss_b.ebx = 0;
-	tss_b.esp  = 0x00080000;
+	tss_b.esp  = mem_alloc1m() + (1024 * 1024);
 	tss_b.ebp = 0;
 	tss_b.esi = 0;
 	tss_b.edi = 0;
