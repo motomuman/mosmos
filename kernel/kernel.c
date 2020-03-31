@@ -14,7 +14,7 @@ void int_keyboard(int *esp) {
 	unsigned char data;
 	io_out8(0x20, 0x20);	// End of Interrupt command
 	data = io_in8(0x0060);	// get input key code
-	printstr("keyint\n");
+	printstr_log("keyint\n");
 	fifo8_put(&keyfifo, data);
 	return;
 }
@@ -24,7 +24,7 @@ void int_pit(int *esp) {
 	io_out8(0x20, 0x20);	// End of Interrupt command
 	pitnum++;
 	if(pitnum%200 == 0) {
-		printstr("task_switch: ");
+		printstr_log("task_switch: ");
 		task_show();
 		task_switch();
 	}
@@ -36,7 +36,7 @@ void task_b_main() {
 	while(1) {
 		for(i = 0; i < 200000000; i++){
 		}
-		printstr("task_b_main\n");
+		printstr_app("task_b_main\n");
 	}
 }
 
@@ -45,7 +45,7 @@ void task_c_main() {
 	while(1) {
 		for(i = 0; i < 200000000; i++){
 		}
-		printstr("task_c_main\n");
+		printstr_app("task_c_main\n");
 	}
 }
 
@@ -62,13 +62,13 @@ void kstart(void)
 	mem_init();
 	mem_free1m_batch(0x00200000, memsize - 0x00200000);
 
-	printstr("total memory: ");
-	printnum(memsize/1024/1024);
-	printstr(" MB\n");
+	printstr_log("total memory: ");
+	printnum_log(memsize/1024/1024);
+	printstr_log(" MB\n");
 
-	printstr("free memory: ");
-	printnum(mem_free_size());
-	printstr(" MB\n");
+	printstr_log("free memory: ");
+	printnum_log(mem_free_size());
+	printstr_log(" MB\n");
 
 	struct TASK *task_a;
 	struct TASK *task_b;
@@ -93,14 +93,14 @@ void kstart(void)
 		//printstr("task_a_main\n");
 		io_cli();
 		if(fifo8_status(&keyfifo) == 0) {
-			printstr("task sleep\n");
+			printstr_log("task sleep\n");
 			task_sleep();
 			io_sti();
 		} else {
 			i = fifo8_get(&keyfifo);
 			io_sti();
-			printhex(i);
-			printstr("\n");
+			printhex_app(i);
+			printstr_app("\n");
 		}
 	}
 }

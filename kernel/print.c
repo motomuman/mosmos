@@ -22,49 +22,93 @@
 //                 |      |
 //                 |      |
 //
+//         40         40         39
+// 0                 39|41                79
+// +-------------------+------------------+ 0
+// |                   |                  |
+// |                   |                  |
+// |                   |                  |
+// |                   |                  |
+// |                   |                  |     30
+// |                   |                  |
+// |                   |                  |
+// |                   |                  |
+// |                   |                  |
+// |                   |                  | 29
+// +-------------------+------------------+
 
 int FONT_ADR;
-int x; int y;
+
+struct SCREEN {
+	int width, height;
+	int startx, starty;
+	int x, y;
+};
+
+struct SCREEN appscreen;
+struct SCREEN logscreen;
+struct SCREEN monitorscreen;
 
 void initscreen() {
-	int tmpx = x;
-	int tmpy = y;
-	x = 0;
-	y = 0;
-	printnum(tmpx);
-	printstr("\n");
-	printnum(tmpy);
-	printstr("\n");
+	appscreen.startx = 0;
+	appscreen.starty = 0;
+	appscreen.width = 40;
+	appscreen.height = 30;
+	appscreen.x = 0;
+	appscreen.y = 0;
+
+	logscreen.startx = 41;
+	logscreen.starty = 0;
+	logscreen.width = 39;
+	logscreen.height = 30;
+	logscreen.x = 0;
+	logscreen.y = 0;
+
+	int i, width;
+	char *p;
+	for(width = 0; width < 3; width++) {
+		for (i = 0xa0000 + 40 + 80 * width; i <= 0xaffff; i += 80 * 16) {
+			p = (char *) i;
+			*p = 0x10;
+		}
+	}
 }
 
-void clear() {
+void clear(struct SCREEN *screen) {
 	int i;
 	char *p;
 
 	for (i = 0xa0000; i <= 0xaffff; i += 1) {
-		p = (char *) i;
-		*p = 0x00;
+		int x = (i - 0xa0000) % 80;
+		int y = (i - 0xa0000) / (80 * 16);
+		if( x >= screen->startx && x < screen->startx + screen->width
+				&& y >= screen->starty && y < screen->starty + screen->height ) {
+			p = (char *) i;
+			*p = 0x00;
+		}
 	}
 }
 
-void fixpos() {
-	if(x == 80){
-		y++;
-		x = 0;
+void fixpos(struct SCREEN *screen) {
+	if(screen->x >= screen->width){
+		screen->y++;
+		screen->x = 0;
 	}
-	if(y == 30){
-		clear();
-		y = 0;
-		x = 0;
+	if(screen->y >= screen->height){
+		clear(screen);
+		screen->y = 0;
+		screen->x = 0;
 	}
 }
 
-void putchar(char ch) {
+void putchar(struct SCREEN *screen, char ch) {
 	if(ch == '\n') {
-		x = 0;
-		y++;
+		screen->x = 0;
+		screen->y++;
 	} else {
 		int i;
+		int y = screen->starty + screen->y;
+		int x = screen->startx + screen->x;
 		int vaddr = 0xa0000 + (80 * 16 * y) + x;
 		char *chaddr = (char *)(FONT_ADR + (ch<<4));
 
@@ -73,21 +117,29 @@ void putchar(char ch) {
 			vaddr += 80;
 			chaddr += 1;
 		}
-		x++;
+		screen->x++;
 	}
-	fixpos();
+	fixpos(screen);
 }
 
-void printstr(char *str) {
+void printstr(struct SCREEN *screen, char *str) {
 	int i;
 	for(i = 0; str[i] != 0; i++){
-		putchar(str[i]);
+		putchar(screen, str[i]);
 	}
 }
 
-void printnum(int num) {
+void printstr_app(char *str) {
+	printstr(&appscreen, str);
+}
+
+void printstr_log(char *str) {
+	printstr(&logscreen, str);
+}
+
+void printnum(struct SCREEN *screen, int num) {
 	if(num == 0) {
-		putchar('0');
+		putchar(screen, '0');
 		return;
 	}
 	char buf[50];
@@ -115,10 +167,18 @@ void printnum(int num) {
 		printbuf[i] = buf[len - i];
 	}
 	printbuf[i] = 0;
-	printstr(printbuf);
+	printstr(screen, printbuf);
 }
 
-void printhex(int num) {
+void printnum_app(int num) {
+	printnum(&appscreen, num);
+}
+
+void printnum_log(int num) {
+	printnum(&logscreen, num);
+}
+
+void printhex(struct SCREEN *screen, int num) {
 	char buf[50];
 	int len = 0;
 	while(num > 0){
@@ -141,5 +201,14 @@ void printhex(int num) {
 		printbuf[i] = buf[len - i];
 	}
 	printbuf[i] = 0;
-	printstr(printbuf);
+	printstr(screen, printbuf);
 }
+
+void printhex_app(int num) {
+	printhex(&appscreen, num);
+}
+
+void printhex_log(int num) {
+	printhex(&logscreen, num);
+}
+

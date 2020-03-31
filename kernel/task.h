@@ -32,6 +32,7 @@ struct TASKCTL {
 struct TASK *task_init();
 struct TASK *task_alloc();
 void task_run(struct TASK *new_task);
+void task_sleep();
 void task_switch();
 void task_show();
 

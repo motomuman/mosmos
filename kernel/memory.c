@@ -48,7 +48,7 @@ unsigned int mem_alloc1m() {
 
 unsigned int mem_alloc(unsigned int request) {
 	if (request > 1024 * 1024) {
-		printstr("ERROR: large memory req\n");
+		printstr_log("ERROR: large memory req\n");
 		return 0;
 	}
 	return mem_alloc1m();

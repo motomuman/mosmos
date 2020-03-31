@@ -77,7 +77,7 @@ void task_sleep()
 
 	// after remove current task from running queue,
 	// Jump to next task
-	printstr("far jump\n");
+	printstr_log("far jump\n");
 	farjmp(0, taskctl.running_first->sel * 8);
 }
 
@@ -95,13 +95,13 @@ void task_switch() {
 
 void task_show()
 {
-	printstr("task list\n");
+	printstr_log("task list\n");
 	struct TASK *task;
 	for(task = taskctl.running_first; task != NULL; task = task->next) {
-		printnum(task->sel);
-		printstr(" -> ");
+		printnum_log(task->sel);
+		printstr_log(" -> ");
 	}
-	printstr("\n");
+	printstr_log("\n");
 }
 
 
