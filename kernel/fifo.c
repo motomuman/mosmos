@@ -7,6 +7,7 @@ void fifo8_init(struct FIFO8 *fifo, int size, unsigned char *buf)
 	fifo->buf = buf;
 	fifo->read_pos = 0;
 	fifo->write_pos = 0;
+	fifo->receive_task = NULL;
 	return;
 }
 
@@ -20,6 +21,9 @@ int fifo8_put(struct FIFO8 *fifo, unsigned char data)
 	fifo->write_pos++;
 	if(fifo->write_pos == fifo->size){
 		fifo->write_pos = 0;
+	}
+	if(fifo->receive_task != NULL) {
+		task_run(fifo->receive_task);
 	}
 	return 0;
 }

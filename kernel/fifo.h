@@ -1,9 +1,12 @@
 #ifndef _FIFO_H_
 #define _FIFO_H_
 
+#include "task.h"
+
 struct FIFO8 {
 	unsigned char *buf;
 	int read_pos, write_pos, size, free;
+	struct TASK *receive_task;
 };
 
 void fifo8_init(struct FIFO8 *fifo, int size, unsigned char *buf);

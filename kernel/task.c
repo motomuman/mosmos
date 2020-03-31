@@ -22,7 +22,8 @@ struct TASK *task_init()
 struct TASK *task_alloc()
 {
 	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *) ADR_GDT;
-	struct TASK *new_task = (struct TASK*) mem_alloc(sizeof(struct TASK));
+	struct TASK *new_task = &taskctl.tasks[taskctl.next_task_sel];
+	new_task->flag = TASK_INITIALIZED;
 	new_task->next = NULL;
 	new_task->sel = taskctl.next_task_sel;
 	taskctl.next_task_sel++;
@@ -45,11 +46,15 @@ struct TASK *task_alloc()
 	new_task->tss.ds = 2 * 8;
 	new_task->tss.fs = 2 * 8;
 	new_task->tss.gs = 2 * 8;
-
 	return new_task;
 }
 
 void task_run(struct TASK *new_task) {
+	// task is already running
+	if(new_task->flag == TASK_RUNNING) {
+		return;
+	}
+	new_task->flag = TASK_RUNNING;
 	if(taskctl.running_first == NULL) {
 		taskctl.running_first = new_task;
 		taskctl.running_last = new_task;
@@ -57,6 +62,23 @@ void task_run(struct TASK *new_task) {
 	}
 	taskctl.running_last->next = new_task;
 	taskctl.running_last = new_task;
+}
+
+void task_sleep()
+{
+	// no running task or only one task is running
+	if(taskctl.running_first == NULL || taskctl.running_first->next == NULL) {
+		return;
+	}
+	struct TASK *current_task = taskctl.running_first;
+	taskctl.running_first = taskctl.running_first->next;
+	current_task->flag = TASK_WAITING;
+	current_task->next = NULL;
+
+	// after remove current task from running queue,
+	// Jump to next task
+	printstr("far jump\n");
+	farjmp(0, taskctl.running_first->sel * 8);
 }
 
 void task_switch() {

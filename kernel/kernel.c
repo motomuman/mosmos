@@ -23,7 +23,7 @@ int pitnum;
 void int_pit(int *esp) {
 	io_out8(0x20, 0x20);	// End of Interrupt command
 	pitnum++;
-	if(pitnum%100 == 0) {
+	if(pitnum%200 == 0) {
 		printstr("task_switch: ");
 		task_show();
 		task_switch();
@@ -34,7 +34,7 @@ void int_pit(int *esp) {
 void task_b_main() {
 	int i;
 	while(1) {
-		for(i = 0; i < 80000000; i++){
+		for(i = 0; i < 200000000; i++){
 		}
 		printstr("task_b_main\n");
 	}
@@ -43,7 +43,7 @@ void task_b_main() {
 void task_c_main() {
 	int i;
 	while(1) {
-		for(i = 0; i < 80000000; i++){
+		for(i = 0; i < 200000000; i++){
 		}
 		printstr("task_c_main\n");
 	}
@@ -70,9 +70,10 @@ void kstart(void)
 	printnum(mem_free_size());
 	printstr(" MB\n");
 
+	struct TASK *task_a;
 	struct TASK *task_b;
 	struct TASK *task_c;
-	task_init();
+	task_a = task_init();
 	task_b = task_alloc();
 	task_b->tss.eip = (int) &task_b_main;
 	task_run(task_b);
@@ -83,20 +84,23 @@ void kstart(void)
 
 	unsigned char keybuf[32];
 	fifo8_init(&keyfifo, 32, keybuf);
+	keyfifo.receive_task = task_a;
 
 	int i;
 	while(1){
-		for(i = 0; i < 80000000; i++){
-		}
-		printstr("task_a_main\n");
-		//io_cli();
-		//if(fifo8_status(&keyfifo) == 0) {
-		//	io_stihlt();
-		//} else {
-		//	i = fifo8_get(&keyfifo);
-		//	io_sti();
-		//	printhex(i);
-		//	printstr("\n");
+		//for(i = 0; i < 80000000; i++){
 		//}
+		//printstr("task_a_main\n");
+		io_cli();
+		if(fifo8_status(&keyfifo) == 0) {
+			printstr("task sleep\n");
+			task_sleep();
+			io_sti();
+		} else {
+			i = fifo8_get(&keyfifo);
+			io_sti();
+			printhex(i);
+			printstr("\n");
+		}
 	}
 }
