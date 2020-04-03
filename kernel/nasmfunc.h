@@ -3,6 +3,8 @@
 
 int io_in8(int port);
 int io_out8(int port, int data);
+int io_in32(int port);
+int io_out32(int port, int data);
 void io_cli();
 void io_sti();
 void io_hlt();

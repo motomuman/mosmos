@@ -1,5 +1,7 @@
 global _io_in8
 global _io_out8
+global _io_in32
+global _io_out32
 global _io_cli
 global _io_sti
 global _io_hlt
@@ -30,6 +32,18 @@ _io_out8:	; void io_out8(int port, int data)
 	mov	edx, [esp+4]
 	mov	al, [esp + 8]
 	out	dx, al
+	ret
+
+_io_in32:	; int io_in32(int port)
+	mov	edx, [esp+4]
+	mov	eax, 0
+	in	eax, dx;
+	ret
+
+_io_out32:	; void io_out32(int port, int data)
+	mov	edx, [esp+4]
+	mov	eax, [esp + 8]
+	out	dx, eax
 	ret
 
 _io_cli:
@@ -143,9 +157,9 @@ _memtest_sub:	; unsigned int memtest_sub(unsigned int start, unsigned int end)
 	cmp	eax, [esp + 12 + 8]
 	jbe	.loop
 	jmp	.allpass
-.fin
+.fin:
 	mov	[ebx], edx  ; *p = edx (restore old value)
-.allpass
+.allpass:
 	pop	ebx
 	pop	esi
 	pop	edi

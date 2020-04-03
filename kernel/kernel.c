@@ -6,6 +6,7 @@
 #include "timer.h"
 #include "memory.h"
 #include "task.h"
+#include "r8169.h"
 
 int *FONT_ADR;
 struct FIFO8 keyfifo;
@@ -36,7 +37,7 @@ void task_b_main() {
 	while(1) {
 		for(i = 0; i < 200000000; i++){
 		}
-		printstr_app("task_b_main\n");
+		printstr_log("task_b_main\n");
 	}
 }
 
@@ -45,7 +46,7 @@ void task_c_main() {
 	while(1) {
 		for(i = 0; i < 200000000; i++){
 		}
-		printstr_app("task_c_main\n");
+		printstr_log("task_c_main\n");
 	}
 }
 
@@ -56,6 +57,8 @@ void kstart(void)
 	io_sti();
 	init_pit();
 	initscreen();
+
+	init_r8169();
 
 	// Check memory size(start: 0x00400000, end: 0xffffffff)
 	int memsize = memtest(0x00400000, 0xffffffff);
