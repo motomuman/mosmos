@@ -12,4 +12,4 @@ kernel(initial):		0x00009c00 - 0x0000bc00
 gdt table:			0x00090000 - 0x0009ffff
 intrupption vec: 		0x00100000 - 0x001007ff
 kernel(relocated): 		0x00101000 - 0x00103000
-free(managed by mem lib): 	0x00200000 -
+free(managed by mem lib): 	0x00a00000 -

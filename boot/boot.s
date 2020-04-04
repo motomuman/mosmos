@@ -186,9 +186,9 @@ stage_load_kernel:
 ;------------------------------------
 stage_video_mode:
 	; Wait key press so that I can see debug log before move to protect mode
-	cdecl puts, .ask_for_protect_mode_msg
-	mov	ah, 0x00
-	int	0x16
+	; cdecl puts, .ask_for_protect_mode_msg
+	; mov	ah, 0x00
+	; int	0x16
 
 	; Update video mode
 	mov	ax, 0x0012	; VGA 640x480

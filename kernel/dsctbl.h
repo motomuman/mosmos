@@ -1,6 +1,8 @@
 #ifndef _DSCTBL_H_
 #define _DSCTBL_H_
 
+#include <stdint.h>
+
 //IDT 0x00100000 - 0x001007ff
 #define ADR_IDT 0x00100000
 
@@ -36,5 +38,6 @@ struct GATE_DESCRIPTOR {
 void init_gdtidt();
 void set_gatedesc(struct GATE_DESCRIPTOR *gd, int offset, int selector, int ar);
 void set_segmdesc(struct SEGMENT_DESCRIPTOR *sd, unsigned int limit, int base, int ar);
+void set_idt(uint8_t idtidx, uint32_t handler);
 
 #endif

@@ -18,9 +18,6 @@ void init_gdtidt()
 		set_gatedesc(idt + i, 0, 0, 0);
 	}
 	load_idtr(LIMIT_IDT, ADR_IDT);
-
-	set_gatedesc(idt + 0x20, (int) asm_int_pit, 8, 0x008e);
-	set_gatedesc(idt + 0x21, (int) asm_int_keyboard, 8, 0x008e);
 }
 
 // Segment descriptor
@@ -87,4 +84,10 @@ void set_gatedesc(struct GATE_DESCRIPTOR *gd, int offset, int selector, int ar)
 	gd->access_right = ar & 0xff;
 	gd->offset_high  = (offset >> 16) & 0xffff;
 	return;
+}
+
+void set_idt(uint8_t idtidx, uint32_t handler)
+{
+	struct GATE_DESCRIPTOR    *idt = (struct GATE_DESCRIPTOR    *) ADR_IDT;
+	set_gatedesc(idt + idtidx, handler, 8, 0x008e);
 }

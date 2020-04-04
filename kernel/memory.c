@@ -18,6 +18,13 @@ void mem_init() {
 	for(i = 0; i < MAX_MEMSIZE; i++){
 		mem.addr[i] = 0;
 	}
+
+	// Check memory size(start: 0x00600000, end: 0xffffffff)
+	int memsize = memtest(0x00600000, 0xffffffff);
+	printstr_log("total memory: ");
+	printnum_log(memsize/1024/1024);
+	printstr_log(" MB\n");
+	mem_free1m_batch(0x00a00000, memsize - 0x00a00000);
 	return;
 }
 

@@ -13,7 +13,7 @@ struct FIFO8 keyfifo;
 
 void int_keyboard(int *esp) {
 	unsigned char data;
-	io_out8(0x20, 0x20);	// End of Interrupt command
+	pic_sendeoi(KEYBOARD_IRQ);
 	data = io_in8(0x0060);	// get input key code
 	printstr_log("keyint\n");
 	fifo8_put(&keyfifo, data);
@@ -22,7 +22,7 @@ void int_keyboard(int *esp) {
 
 int pitnum;
 void int_pit(int *esp) {
-	io_out8(0x20, 0x20);	// End of Interrupt command
+	pic_sendeoi(PIT_IRQ);
 	pitnum++;
 	if(pitnum%200 == 0) {
 		printstr_log("task_switch: ");
@@ -52,22 +52,13 @@ void task_c_main() {
 
 void kstart(void)
 {
-	init_gdtidt();
-	init_pic();
-	io_sti();
-	init_pit();
 	initscreen();
-
-	init_r8169();
-
-	// Check memory size(start: 0x00400000, end: 0xffffffff)
-	int memsize = memtest(0x00400000, 0xffffffff);
+	init_gdtidt();
+	init_interrupt();
 	mem_init();
-	mem_free1m_batch(0x00200000, memsize - 0x00200000);
-
-	printstr_log("total memory: ");
-	printnum_log(memsize/1024/1024);
-	printstr_log(" MB\n");
+	init_pit();
+	init_r8169();
+	io_sti();
 
 	printstr_log("free memory: ");
 	printnum_log(mem_free_size());

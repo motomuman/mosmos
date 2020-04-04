@@ -3,6 +3,8 @@
 
 int io_in8(int port);
 int io_out8(int port, int data);
+int io_in16(int port);
+int io_out16(int port, int data);
 int io_in32(int port);
 int io_out32(int port, int data);
 void io_cli();
@@ -19,6 +21,7 @@ void store_cr0(int cr0);
 void farjmp(int cip, int cs);
 void asm_int_keyboard();
 void asm_int_pit();
+void asm_int_r8169();
 unsigned int memtest_sub(unsigned int start, unsigned int end);
 
 #endif

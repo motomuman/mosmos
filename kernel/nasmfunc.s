@@ -1,5 +1,7 @@
 global _io_in8
 global _io_out8
+global _io_in16
+global _io_out16
 global _io_in32
 global _io_out32
 global _io_cli
@@ -10,6 +12,7 @@ global _io_load_eflags
 global _io_store_eflags
 global _asm_int_keyboard
 global _asm_int_pit
+global _asm_int_r8169
 global _load_idtr
 global _load_gdtr
 global _load_tr
@@ -20,6 +23,7 @@ global _memtest_sub
 
 extern _int_keyboard
 extern _int_pit
+extern _r8169_int_handler
 
 [BITS 32]
 _io_in8:	; int io_in8(int port)
@@ -33,6 +37,19 @@ _io_out8:	; void io_out8(int port, int data)
 	mov	al, [esp + 8]
 	out	dx, al
 	ret
+
+_io_in16:	; int io_in8(int port)
+	mov	edx, [esp+4]
+	mov	eax, 0
+	in	ax, dx;
+	ret
+
+_io_out16:	; void io_out8(int port, int data)
+	mov	edx, [esp+4]
+	mov	ax, [esp + 8]
+	out	dx, ax
+	ret
+
 
 _io_in32:	; int io_in32(int port)
 	mov	edx, [esp+4]
@@ -90,6 +107,23 @@ _asm_int_pit:
 	mov	es, ax
 
 	call 	_int_pit
+
+	pop	es
+	pop	ds
+	popa
+
+	iret
+
+_asm_int_r8169:
+	pusha
+	push	ds
+	push	es
+
+	mov	ax, 0x0010
+	mov	ds, ax
+	mov	es, ax
+
+	call 	_r8169_int_handler
 
 	pop	es
 	pop	ds
