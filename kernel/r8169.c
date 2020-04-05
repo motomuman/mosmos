@@ -4,6 +4,7 @@
 #include "nasmfunc.h"
 #include "memory.h"
 #include "int.h"
+#include "workqueue.h"
 
 /*
  * References
@@ -128,31 +129,36 @@ void receive_packet() {
 		uint8_t *pkt_data = (uint8_t *) rx_desc->low_buf;
 
 
-		printstr_app("Packet RX Size: ");
-		printnum_app(pkt_len);
-		printstr_app("\n");
-		uint16_t i;
+		struct work *w = (struct work *)mem_alloc(sizeof(struct work));
+		w->type = wt_packet_receive;
+		w->u.packet_receive.pkt_len = pkt_len;
+		wq_push(w);
 
-		printstr_app("dst mac: ");
-		for (i = 0; i < 6; i++){
-			printhex_app(*((uint8_t *)(pkt_data + i)));
-			if(i != 5) {
-				printstr_app(":");
-			}
-		}
-		printstr_app("\n");
-		printstr_app("src mac: ");
-		for (i = 6; i < 12; i++){
-			printhex_app(*((uint8_t *)(pkt_data + i)));
-			if(i != 11) {
-				printstr_app(":");
-			}
-		}
-		printstr_app("\n");
-		printstr_app("type: ");
-		printhex_app(*((uint8_t *)(pkt_data + 12)));
-		printhex_app(*((uint8_t *)(pkt_data + 13)));
-		printstr_app("\n");
+		//printstr_app("Packet RX Size: ");
+		//printnum_app(pkt_len);
+		//printstr_app("\n");
+		//uint16_t i;
+
+		//printstr_app("dst mac: ");
+		//for (i = 0; i < 6; i++){
+		//	printhex_app(*((uint8_t *)(pkt_data + i)));
+		//	if(i != 5) {
+		//		printstr_app(":");
+		//	}
+		//}
+		//printstr_app("\n");
+		//printstr_app("src mac: ");
+		//for (i = 6; i < 12; i++){
+		//	printhex_app(*((uint8_t *)(pkt_data + i)));
+		//	if(i != 11) {
+		//		printstr_app(":");
+		//	}
+		//}
+		//printstr_app("\n");
+		//printstr_app("type: ");
+		//printhex_app(*((uint8_t *)(pkt_data + 12)));
+		//printhex_app(*((uint8_t *)(pkt_data + 13)));
+		//printstr_app("\n");
 
 		rx_desc->opts1 |= DescOwn;
 		r8169_device.cur_rx++;
