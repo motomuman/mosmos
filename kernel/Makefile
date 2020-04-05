@@ -2,7 +2,7 @@
 # first object binary comes to first in kernel.
 # kasm has entry point and call kernel start in kernel.c.
 # So I need to put kasm first.
-OBJS_KERNEL = kasm.o kernel.o print.o nasmfunc.o int.o dsctbl.o fifo.o timer.o memory.o task.o pci.o r8169.o
+OBJS_KERNEL = kasm.o kernel.o print.o nasmfunc.o int.o dsctbl.o fifo.o timer.o memory.o task.o pci.o r8169.o list.o
 
 AS = nasm
 CC = gcc

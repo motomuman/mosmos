@@ -1,6 +1,8 @@
 #ifndef _TASK_H_
 #define _TASK_H_
 
+#include "list.h"
+
 #define MAX_TASK 100
 #define TASK_GDT 3
 #define NULL 0
@@ -16,7 +18,7 @@ struct TSS32 {
 };
 
 struct TASK {
-	struct TASK *next;
+	struct list_item link;
 	int sel;
 	int flag;
 	struct TSS32 tss;
@@ -24,8 +26,7 @@ struct TASK {
 
 struct TASKCTL {
 	int next_task_sel;
-	struct TASK *running_first;
-	struct TASK *running_last;
+	struct listctl list;
 	struct TASK tasks[TASK_GDT + MAX_TASK];
 };
 

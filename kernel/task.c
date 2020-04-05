@@ -6,12 +6,10 @@
 
 struct TASKCTL taskctl;
 
-
 struct TASK *task_init()
 {
 	taskctl.next_task_sel = TASK_GDT;
-	taskctl.running_first = NULL;
-	taskctl.running_last = NULL;
+	list_init(&taskctl.list);
 
 	struct TASK *initial_task = task_alloc();
 	task_run(initial_task);
@@ -24,7 +22,6 @@ struct TASK *task_alloc()
 	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *) ADR_GDT;
 	struct TASK *new_task = &taskctl.tasks[taskctl.next_task_sel];
 	new_task->flag = TASK_INITIALIZED;
-	new_task->next = NULL;
 	new_task->sel = taskctl.next_task_sel;
 	taskctl.next_task_sel++;
 	set_segmdesc(gdt + new_task->sel, 103, (int) &new_task->tss, AR_TSS32);
@@ -55,41 +52,34 @@ void task_run(struct TASK *new_task) {
 		return;
 	}
 	new_task->flag = TASK_RUNNING;
-	if(taskctl.running_first == NULL) {
-		taskctl.running_first = new_task;
-		taskctl.running_last = new_task;
-		return;
-	}
-	taskctl.running_last->next = new_task;
-	taskctl.running_last = new_task;
+	list_pushback(&taskctl.list, &new_task->link);
 }
 
 void task_sleep()
 {
 	// no running task or only one task is running
-	if(taskctl.running_first == NULL || taskctl.running_first->next == NULL) {
+	struct TASK *current_task = (struct TASK *) list_head(&taskctl.list);
+	if(current_task == NULL || list_next(&current_task->link) == NULL) {
 		return;
 	}
-	struct TASK *current_task = taskctl.running_first;
-	taskctl.running_first = taskctl.running_first->next;
+	list_popfront(&taskctl.list);
 	current_task->flag = TASK_WAITING;
-	current_task->next = NULL;
+
+	struct TASK *next_task = (struct TASK *) list_head(&taskctl.list);
 
 	// after remove current task from running queue,
 	// Jump to next task
 	printstr_log("far jump\n");
-	farjmp(0, taskctl.running_first->sel * 8);
+	farjmp(0, next_task->sel * 8);
 }
 
 void task_switch() {
-	struct TASK *current_task = taskctl.running_first;
-	struct TASK *next_task = current_task->next;
+	struct TASK *current_task = (struct TASK *) list_head(&taskctl.list);
+	struct TASK *next_task = (struct TASK *)list_next(&current_task->link);
 	if(next_task != NULL) {
-		taskctl.running_first = next_task;
-		taskctl.running_last->next = current_task;
-		taskctl.running_last = current_task;
-		taskctl.running_last->next = NULL;
-		farjmp(0, taskctl.running_first->sel * 8);
+		list_popfront(&taskctl.list);
+		list_pushback(&taskctl.list, &current_task->link);
+		farjmp(0, next_task->sel * 8);
 	}
 }
 
@@ -97,7 +87,7 @@ void task_show()
 {
 	printstr_log("task list\n");
 	struct TASK *task;
-	for(task = taskctl.running_first; task != NULL; task = task->next) {
+	for(task = (struct TASK *) list_head(&taskctl.list); task != NULL; task = (struct TASK *)list_next(&task->link)) {
 		printnum_log(task->sel);
 		printstr_log(" -> ");
 	}
