@@ -7,6 +7,8 @@
 #include "task.h"
 #include "r8169.h"
 #include "workqueue.h"
+#include "ether.h"
+#include "netdev.h"
 
 int *FONT_ADR;
 
@@ -59,13 +61,13 @@ void kstart(void)
 	init_interrupt();
 	mem_init();
 	init_pit();
-	init_r8169();
 	wq_init();
-	io_sti();
 
-	printstr_log("free memory: ");
-	printnum_log(mem_free_size());
-	printstr_log(" MB\n");
+	init_r8169();
+	uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 2;
+	netdev_set_ip_addr(ip_addr);
+
+	io_sti();
 
 	struct TASK *task_a;
 	struct TASK *task_b;
@@ -97,9 +99,10 @@ void kstart(void)
 					printstr_app("\n");
 					break;
 				case wt_packet_receive:
-					printstr_app("wt_packet_receive: ");
-					printnum_app(w->u.packet_receive.pkt_len);
-					printstr_app("\n");
+					//printstr_app("wt_packet_receive\n");
+					ether_rx(w->u.packet_receive.pbuf);
+					mem_free1m((uint32_t)w->u.packet_receive.pbuf->buf_head);
+					mem_free1m((uint32_t)w->u.packet_receive.pbuf);
 					break;
 			}
 			mem_free1m((uint32_t)w);

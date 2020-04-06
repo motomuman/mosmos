@@ -5,6 +5,8 @@
 #include "memory.h"
 #include "int.h"
 #include "workqueue.h"
+#include "netdev.h"
+#include "lib.h"
 
 /*
  * References
@@ -24,6 +26,11 @@ enum rtl_registers {
 #define CmdRxEnb	  0x08
 #define CmdTxEnb	  0x04
 #define RxBufEmpty	  0x01
+
+	TxPoll		= 0x38,
+// Poll cmd on the low prio queue
+#define NPQ		  0x40
+
 
 	IntrMask	= 0x3c,
 #define PCIErr		  0x8000
@@ -121,7 +128,7 @@ void receive_packet() {
 		struct Descriptor *rx_desc = r8169_device.rx_ring + r8169_device.cur_rx;
 
 		if( rx_desc->opts1 & DescOwn ) {
-			printstr_app("RX processing finished\n");
+			//printstr_app("RX processing finished\n");
 			break;
 		}
 
@@ -129,36 +136,18 @@ void receive_packet() {
 		uint8_t *pkt_data = (uint8_t *) rx_desc->low_buf;
 
 
+		// Create work and push to workqueue
+		struct pktbuf * pbuf = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf));
 		struct work *w = (struct work *)mem_alloc(sizeof(struct work));
+		uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * pkt_len);
+
+		memcpy(buf, pkt_data, pkt_len);
+		pbuf->pkt_len = pkt_len;
+		pbuf->buf = buf;
+		pbuf->buf_head = buf;
 		w->type = wt_packet_receive;
-		w->u.packet_receive.pkt_len = pkt_len;
+		w->u.packet_receive.pbuf = pbuf;
 		wq_push(w);
-
-		//printstr_app("Packet RX Size: ");
-		//printnum_app(pkt_len);
-		//printstr_app("\n");
-		//uint16_t i;
-
-		//printstr_app("dst mac: ");
-		//for (i = 0; i < 6; i++){
-		//	printhex_app(*((uint8_t *)(pkt_data + i)));
-		//	if(i != 5) {
-		//		printstr_app(":");
-		//	}
-		//}
-		//printstr_app("\n");
-		//printstr_app("src mac: ");
-		//for (i = 6; i < 12; i++){
-		//	printhex_app(*((uint8_t *)(pkt_data + i)));
-		//	if(i != 11) {
-		//		printstr_app(":");
-		//	}
-		//}
-		//printstr_app("\n");
-		//printstr_app("type: ");
-		//printhex_app(*((uint8_t *)(pkt_data + 12)));
-		//printhex_app(*((uint8_t *)(pkt_data + 13)));
-		//printstr_app("\n");
 
 		rx_desc->opts1 |= DescOwn;
 		r8169_device.cur_rx++;
@@ -171,7 +160,6 @@ void receive_packet() {
 void r8169_int_handler() {
 	uint16_t status = io_in16(r8169_device.ioaddr + IntrStatus);
 
-	printstr_app("r8169_int: "); printhex_app(status); printstr_app("\n");
 	if(status & PCIErr) printstr_app("PCIErr\n");
 	if(status & PCSTimeout) printstr_app("PCSTimeout\n");
 	if(status & RxFIFOOver) printstr_app("RxFIFOOver\n");
@@ -179,8 +167,8 @@ void r8169_int_handler() {
 	if(status & RxOverflow) printstr_app("RxOverflow\n");
 	if(status & TxErr) printstr_app("TxErr\n");
 	if(status & RxErr) printstr_app("RxErr\n");
-	if(status & TxOK) printstr_app("Packet tx\n");
-	if(status & RxOK) printstr_app("Packet rx\n");
+	if(status & TxOK) printstr_app("Packet tx interrupt\n");
+	if(status & RxOK) printstr_app("Packet rx interrupt\n");
 
 	if(status & RxOK) {
 		receive_packet();
@@ -190,20 +178,29 @@ void r8169_int_handler() {
 	io_out16(r8169_device.ioaddr + IntrStatus, status);
 }
 
-void send_packet() {
-	return;
-}
-
-void show_mac() {
-	int i;
-	printstr_app("mac: ");
-	for (i = 0; i < 6; i++) {
-		uint8_t mac;
-		mac = io_in8(r8169_device.ioaddr + i);
-		printhex_app(mac);
-		printstr_app(":");
-	}
+void r8169_tx(struct pktbuf *pkt) {
+	printstr_app("r8169_tx");
+	printnum_app(pkt->pkt_len);
 	printstr_app("\n");
+
+	struct Descriptor *tx_desc = r8169_device.tx_ring + r8169_device.cur_tx;
+	if( tx_desc->opts1 & DescOwn ) {
+		printstr_app("TX processing failed\n");
+		return;
+	}
+
+	uint8_t *tx_pkt_data = (uint8_t *) tx_desc->low_buf;
+	memcpy(tx_pkt_data, pkt->buf_head, pkt->pkt_len);
+
+	tx_desc->opts1 = DescOwn | FirstFrag | LastFrag | pkt->pkt_len;
+	io_out8(r8169_device.ioaddr + TxPoll, NPQ);
+
+	r8169_device.cur_tx++;
+	if(r8169_device.cur_tx >= TX_RING_SIZE) {
+		r8169_device.cur_tx -= TX_RING_SIZE;
+	}
+
+	return;
 }
 
 void setup_rx_descriptors()
@@ -222,6 +219,8 @@ void setup_rx_descriptors()
 
 int init_r8169() {
 	r8169_device.cur_rx = 0;
+	r8169_device.cur_tx = 0;
+
 	int ret = pci_find_device(&r8169_device.pcidev, PCI_VENDOR_ID_REALTEK, PCI_DEVICE_ID_REALTEK_810XE);
 	if(ret == 0) {
 		printstr_log("Failed to find r8169 device\n");
@@ -275,6 +274,15 @@ int init_r8169() {
 
 	// register interrupt handler
 	register_interrupt(r8169_device.pcidev.irq, (uint32_t) asm_int_r8169);
+
+	// register net_device
+	int i;
+	uint8_t hw_addr[ETHER_ADDR_LEN];
+	for (i = 0; i < ETHER_ADDR_LEN; i++) {
+		hw_addr[i] = io_in8(r8169_device.ioaddr + i);
+	}
+	netdev_set_hw_addr(hw_addr);
+	netdev_set_tx_handler(r8169_tx);
 
 	return 1;
 }

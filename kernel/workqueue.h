@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "task.h"
+#include "pktbuf.h"
 
 enum worktype {
 	wt_key_input = 1,
@@ -14,7 +15,7 @@ struct work_key_input {
 };
 
 struct work_packet_receive {
-	uint32_t pkt_len;
+	struct pktbuf *pbuf;
 };
 
 struct work {
