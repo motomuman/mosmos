@@ -5,5 +5,6 @@ uint16_t ntoh16(uint16_t bytes);
 uint16_t hton16(uint16_t bytes);
 uint32_t ntoh32(uint32_t bytes);
 uint32_t hton32(uint32_t bytes);
+uint16_t checksum(void * _data, uint16_t len);
 
 #endif

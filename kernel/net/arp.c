@@ -18,16 +18,28 @@ struct {
 	struct arpentry table[MAX_ARP_TABLE];
 } arptable;
 
-void init_arp()
+void init_arptable()
 {
 	arptable.next_entry_idx = 0;
 }
 
 void register_arpentry(uint8_t *mac_addr, uint32_t ip_addr)
 {
-	arptable.table[arptable.next_entry_idx].ip_addr = ip_addr;
-	memcpy(arptable.table[arptable.next_entry_idx].mac_addr, mac_addr, ETHER_ADDR_LEN);
+	uint32_t entry_id = arptable.next_entry_idx;
+	arptable.table[entry_id].ip_addr = ip_addr;
+	memcpy(arptable.table[entry_id].mac_addr, mac_addr, ETHER_ADDR_LEN);
 	arptable.next_entry_idx++;
+}
+
+uint8_t* find_mac_addr(uint32_t ip)
+{
+	int i;
+	for(i = 0; i < arptable.next_entry_idx; i++) {
+		if(arptable.table[i].ip_addr == ip) {
+			return arptable.table[i].mac_addr;
+		}
+	}
+	return 0;
 }
 
 void handle_arp_request(struct arp_etherip *arp)
@@ -67,7 +79,11 @@ void handle_arp_request(struct arp_etherip *arp)
 		pkt->buf -= sizeof(struct arp_hdr);
 		pkt->buf -= sizeof(struct ether_hdr);
 
+		// send arp response
 		ether_tx(pkt, arp->smac, ETHER_TYPE_ARP);
+
+		// register arp request source ip and mac
+		register_arpentry(arp->smac, ntoh32(arp->sip));
 
 		mem_free1m((uint32_t)pkt->buf_head);
 		mem_free1m((uint32_t)pkt);

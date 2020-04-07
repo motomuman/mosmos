@@ -9,6 +9,7 @@
 #include "workqueue.h"
 #include "ether.h"
 #include "netdev.h"
+#include "arp.h"
 
 int *FONT_ADR;
 
@@ -63,6 +64,7 @@ void kstart(void)
 	init_pit();
 	wq_init();
 
+	init_arptable();
 	init_r8169();
 	uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 2;
 	netdev_set_ip_addr(ip_addr);

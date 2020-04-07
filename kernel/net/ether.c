@@ -5,21 +5,22 @@
 #include "arp.h"
 #include "netdev.h"
 #include "lib.h"
+#include "ip.h"
 
 void ether_rx(struct pktbuf *pkt)
 {
-	//printstr_app("ether_rx\n");
-
 	struct ether_hdr *ehdr = (struct ether_hdr *)pkt->buf;
 
 	switch(ntoh16(ehdr->type)) {
 		case ETHER_TYPE_ARP:
-			printstr_app("ARP\n");
+			printstr_app("ether_rx: ARP\n");
 			pkt->buf += sizeof(struct ether_hdr);
 			arp_rx(pkt);
 			break;
 		case ETHER_TYPE_IPV4:
-			//printstr_app("IPV4\n");
+			printstr_app("ether_rx: IPV4\n");
+			pkt->buf += sizeof(struct ether_hdr);
+			ip_rx(pkt);
 			break;
 		default:
 			printstr_app("unknown ether type: ");

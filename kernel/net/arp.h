@@ -29,5 +29,7 @@ struct arp_etherip {
 } __attribute__ ((packed));
 
 void arp_rx(struct pktbuf *pkt);
+void init_arptable();
+uint8_t* find_mac_addr(uint32_t ip);
 
 #endif

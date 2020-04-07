@@ -132,7 +132,7 @@ void receive_packet() {
 			break;
 		}
 
-		int32_t pkt_len = (rx_desc->opts1 & 0x00001fff); //lower 13bit
+		int32_t pkt_len = (rx_desc->opts1 & 0x00001fff) - 4; //lower 13bit - crc
 		uint8_t *pkt_data = (uint8_t *) rx_desc->low_buf;
 
 
