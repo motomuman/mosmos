@@ -2,19 +2,39 @@
 # first object binary comes to first in kernel.
 # kasm has entry point and call kernel start in kernel.c.
 # So I need to put kasm first.
-OBJS_KERNEL = kasm.o kernel.o print.o nasmfunc.o int.o dsctbl.o timer.o memory.o task.o pci.o r8169.o list.o workqueue.o ether.o netutil.o arp.o netdev.o lib.o
 
 AS = nasm
 CC = gcc
 
 ASFLAGS = -f elf
-CFLAGS  = -I . -Wall -m32 -g -fleading-underscore -fno-builtin -nostdlib
+CFLAGS  =  -Wall -m32 -g -fleading-underscore -fno-builtin -nostdlib -I core -I dev -I lib -I net
+
+OBJS_KERNEL = core/kasm.o
+OBJS_KERNEL += core/kernel.o
+OBJS_KERNEL += core/int.o
+OBJS_KERNEL += core/dsctbl.o
+OBJS_KERNEL += core/timer.o
+OBJS_KERNEL += core/memory.o
+OBJS_KERNEL += core/task.o
+OBJS_KERNEL += core/workqueue.o
+OBJS_KERNEL += core/netdev.o
+OBJS_KERNEL += core/pci.o
+OBJS_KERNEL += net/ether.o
+OBJS_KERNEL += net/netutil.o
+OBJS_KERNEL += net/arp.o
+OBJS_KERNEL += lib/nasmfunc.o
+OBJS_KERNEL += lib/list.o
+OBJS_KERNEL += lib/lib.o
+OBJS_KERNEL += lib/print.o
+OBJS_KERNEL += dev/r8169.o
 
 kernel: $(OBJS_KERNEL)
-	$(LD) -N -T kernel.ld -o $@ $^
+	$(LD) -N -T core/kernel.ld -o $@ $^
 
 clean:
-	rm -rf *.img *.lst *.o kernel
+	find . -name "*.o" | xargs rm -f
+	find . -name "*.lst" | xargs rm -f
+	rm -f kernel
 
 # gcc options I thought related
 # (descriptions are picked from gcc man page)
