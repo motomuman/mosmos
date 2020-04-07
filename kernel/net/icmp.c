@@ -62,3 +62,51 @@ void icmp_rx(struct pktbuf *rxpkt, uint32_t sip)
 		mem_free1m((uint32_t)txpkt);
 	}
 }
+
+void icmp_tx(uint32_t dip)
+{
+	printstr_app("icmp_tx: sends echo request\n");
+
+	// Build icmp echo reply and send
+	struct pktbuf * txpkt = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf));
+	txpkt->pkt_len =  (sizeof(struct ether_hdr) + sizeof(struct ip_hdr)
+				+ sizeof(struct icmp_hdr) + sizeof(struct icmp_echo));
+
+	uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * txpkt->pkt_len);
+	txpkt->buf = buf;
+	txpkt->buf_head = buf;
+
+	// reserve for ether header and ip_hdr
+	txpkt->buf += sizeof(struct ether_hdr) + sizeof(struct ip_hdr);
+
+	// set icmp header
+	struct icmp_hdr *icmphdr = (struct icmp_hdr *) txpkt->buf;
+	txpkt->buf += sizeof(struct icmp_hdr);
+	icmphdr->type = ICMP_HDR_TYPE_ECHO_REQUEST;
+	icmphdr->code = 0;
+	icmphdr->checksum = 0;
+
+	// set icmp contents
+	struct icmp_echo *txecho = (struct icmp_echo *) txpkt->buf;
+	txpkt->buf += sizeof(struct icmp_echo);
+	txecho->id = 7777;
+	txecho->seqnum = 0;
+
+	// TODO write icmp data
+
+
+	// restore buf position
+	txpkt->buf -= sizeof(struct icmp_echo);
+	txpkt->buf -= sizeof(struct icmp_hdr);
+
+	//set checksum
+	icmphdr->checksum = checksum(txpkt->buf, txpkt->pkt_len - (sizeof(struct ether_hdr) + sizeof(struct ip_hdr)));
+
+	txpkt->buf -= sizeof(struct ip_hdr);
+
+	// send icmp reply
+	ip_tx(txpkt, dip, IP_HDR_PROTO_ICMP);
+
+	mem_free1m((uint32_t)txpkt->buf_head);
+	mem_free1m((uint32_t)txpkt);
+}

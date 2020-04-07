@@ -19,5 +19,6 @@ struct icmp_echo {
 };
 
 void icmp_rx(struct pktbuf *pkt, uint32_t sip);
+void icmp_tx(uint32_t dip);
 
 #endif

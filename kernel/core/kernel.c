@@ -10,6 +10,7 @@
 #include "ether.h"
 #include "netdev.h"
 #include "arp.h"
+#include "icmp.h"
 
 int *FONT_ADR;
 
