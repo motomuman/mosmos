@@ -193,12 +193,14 @@ void r8169_tx(struct pktbuf *pkt) {
 	memcpy(tx_pkt_data, pkt->buf_head, pkt->pkt_len);
 
 	tx_desc->opts1 = DescOwn | FirstFrag | LastFrag | pkt->pkt_len;
-	io_out8(r8169_device.ioaddr + TxPoll, NPQ);
 
 	r8169_device.cur_tx++;
 	if(r8169_device.cur_tx >= TX_RING_SIZE) {
 		r8169_device.cur_tx -= TX_RING_SIZE;
+		tx_desc->opts1 |= RingEnd;
 	}
+
+	io_out8(r8169_device.ioaddr + TxPoll, NPQ);
 
 	return;
 }
