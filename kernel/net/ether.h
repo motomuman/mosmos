@@ -14,7 +14,7 @@ struct ether_hdr {
 	uint16_t type;
 };
 
-void ether_rx(struct pktbuf *pkt);
+void ether_rx(void *_pkt);
 void ether_tx(struct pktbuf *pkt, uint8_t *dst_mac, uint16_t proto);
 
 #endif

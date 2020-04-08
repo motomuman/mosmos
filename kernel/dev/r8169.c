@@ -138,16 +138,13 @@ void receive_packet() {
 
 		// Create work and push to workqueue
 		struct pktbuf * pbuf = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf));
-		struct work *w = (struct work *)mem_alloc(sizeof(struct work));
 		uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * pkt_len);
 
 		memcpy(buf, pkt_data, pkt_len);
 		pbuf->pkt_len = pkt_len;
 		pbuf->buf = buf;
 		pbuf->buf_head = buf;
-		w->type = wt_packet_receive;
-		w->u.packet_receive.pbuf = pbuf;
-		wq_push(w);
+		wq_push(ether_rx, pbuf);
 
 		rx_desc->opts1 |= DescOwn;
 		r8169_device.cur_rx++;

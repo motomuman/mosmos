@@ -7,8 +7,9 @@
 #include "lib.h"
 #include "ip.h"
 
-void ether_rx(struct pktbuf *pkt)
+void ether_rx(void *_pkt)
 {
+	struct pktbuf *pkt = (struct pktbuf *) _pkt;
 	struct ether_hdr *ehdr = (struct ether_hdr *)pkt->buf;
 
 	switch(ntoh16(ehdr->type)) {

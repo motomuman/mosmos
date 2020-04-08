@@ -14,15 +14,20 @@
 
 int *FONT_ADR;
 
+void print_key(void *_ch) {
+	uint8_t *ch = (uint8_t *)_ch;
+	printstr_app("print_key: ");
+	printhex_app(*ch);
+	printstr_app("\n");
+	mem_free1m((uint32_t) ch);
+}
+
 void int_keyboard(int *esp) {
-	unsigned char data;
+	uint8_t *ch = (uint8_t *)mem_alloc(1);
 	pic_sendeoi(KEYBOARD_IRQ);
-	data = io_in8(0x0060);	// get input key code
+	*ch = io_in8(0x0060);	// get input key code
 	printstr_log("keyint\n");
-	struct work *w = (struct work *)mem_alloc(sizeof(struct work));
-	w->type = wt_key_input;
-	w->u.key_input.ch = data;
-	wq_push(w);
+	wq_push(print_key, ch);
 	return;
 }
 
@@ -93,22 +98,8 @@ void kstart(void)
 			task_sleep();
 			io_sti();
 		} else {
-			struct work * w = wq_pop();
 			io_sti();
-			switch(w->type) {
-				case wt_key_input:
-					printstr_app("wt_key_input: ");
-					printhex_app(w->u.key_input.ch);
-					printstr_app("\n");
-					break;
-				case wt_packet_receive:
-					//printstr_app("wt_packet_receive\n");
-					ether_rx(w->u.packet_receive.pbuf);
-					mem_free1m((uint32_t)w->u.packet_receive.pbuf->buf_head);
-					mem_free1m((uint32_t)w->u.packet_receive.pbuf);
-					break;
-			}
-			mem_free1m((uint32_t)w);
+			wq_execute();
 		}
 	}
 }

@@ -1,10 +1,17 @@
 #include "workqueue.h"
 #include "link.h"
 #include "task.h"
+#include "memory.h"
 
 struct workqueue {
 	struct listctl list;
 	struct TASK *receiver_task;
+};
+
+struct work_task {
+	struct list_item link;
+	void (*func) (void *);
+	void *arg;
 };
 
 struct workqueue wq;
@@ -21,18 +28,25 @@ void wq_set_receiver(struct TASK *receiver)
 	return;
 }
 
-void wq_push(struct work *w)
+void wq_push(void (*func) (void *), void *arg)
 {
-	list_pushback(&wq.list, &w->link);
+	struct work_task *task = (struct work_task *)mem_alloc(sizeof(struct work_task));
+	task->func = func;
+	task->arg = arg;
+	list_pushback(&wq.list, &task->link);
 	if(wq.receiver_task != NULL) {
 		task_run(wq.receiver_task);
 	}
 	return;
 }
 
-struct work* wq_pop()
+void wq_execute()
 {
-	return (struct work*)list_popfront(&wq.list);
+	if(!wq_empty()) {
+		struct work_task *task = (struct work_task*)list_popfront(&wq.list);
+		task->func(task->arg);
+		mem_free1m((uint32_t) task);
+	}
 }
 
 int wq_empty()
