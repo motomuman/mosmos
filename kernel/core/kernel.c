@@ -31,18 +31,6 @@ void int_keyboard(int *esp) {
 	return;
 }
 
-int pitnum;
-void int_pit(int *esp) {
-	pic_sendeoi(PIT_IRQ);
-	pitnum++;
-	if(pitnum%200 == 0) {
-		printstr_log("task_switch: ");
-		task_show();
-		task_switch();
-	}
-	return;
-}
-
 void task_b_main() {
 	int i;
 	while(1) {
@@ -61,6 +49,16 @@ void task_c_main() {
 	}
 }
 
+void hello() {
+	printstr_app("Hello Timer\n");
+	set_timer(hello, NULL, 1000);
+}
+
+void hello2() {
+	printstr_app("Hello Timer2\n");
+	set_timer(hello2, NULL, 2000);
+}
+
 void kstart(void)
 {
 	initscreen();
@@ -68,14 +66,18 @@ void kstart(void)
 	init_interrupt();
 	mem_init();
 	init_pit();
+	init_timer();
 	wq_init();
 
-	init_arptable();
-	init_r8169();
-	uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 2;
-	netdev_set_ip_addr(ip_addr);
+	//init_arptable();
+	//init_r8169();
+	//uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 2;
+	//netdev_set_ip_addr(ip_addr);
 
 	io_sti();
+
+	set_timer(hello, NULL, 1000);
+	set_timer(hello2, NULL, 3000);
 
 	struct TASK *task_a;
 	struct TASK *task_b;

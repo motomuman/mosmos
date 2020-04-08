@@ -25,6 +25,21 @@ struct list_item *list_popfront(struct listctl *list)
 	return first;
 }
 
+void list_pushfront(struct listctl *list, struct list_item *item)
+{
+	if(list_empty(list)) {
+		item->next = NULL;
+		list->head = item;
+		list->tail = item;
+		list->count++;
+		return;
+	}
+	item->next = list->head;
+	list->head = item;
+	list->count++;
+	return;
+}
+
 void list_pushback(struct listctl *list, struct list_item *item)
 {
 	item->next = NULL;
@@ -40,11 +55,22 @@ void list_pushback(struct listctl *list, struct list_item *item)
 	return;
 }
 
+// Insert new_item after prev_item
+void list_insert(struct listctl *list, struct list_item *prev_item, struct list_item *new_item)
+{
+	if(prev_item == NULL) {
+		return;
+	}
+
+	struct list_item *post_item = prev_item->next;
+	prev_item->next = new_item;
+	new_item->next = post_item;
+	list->count++;
+	return;
+}
+
 struct list_item* list_head(struct listctl *list)
 {
-	if(list_empty(list)) {
-		return NULL;
-	}
 	return list->head;
 }
 

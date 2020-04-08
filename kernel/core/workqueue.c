@@ -2,6 +2,7 @@
 #include "link.h"
 #include "task.h"
 #include "memory.h"
+#include "timer.h"
 
 struct workqueue {
 	struct listctl list;
@@ -37,6 +38,25 @@ void wq_push(void (*func) (void *), void *arg)
 	if(wq.receiver_task != NULL) {
 		task_run(wq.receiver_task);
 	}
+	return;
+}
+
+void wq_push_timer_func(void *_task)
+{
+	struct work_task *task = (struct work_task *) _task;
+	list_pushback(&wq.list, &task->link);
+	if(wq.receiver_task != NULL) {
+		task_run(wq.receiver_task);
+	}
+	return;
+}
+
+void wq_push_with_delay(void (*func) (void *), void *arg, uint32_t delay_msec)
+{
+	struct work_task *task = (struct work_task *)mem_alloc(sizeof(struct work_task));
+	task->func = func;
+	task->arg = arg;
+	set_timer(wq_push_timer_func, task, delay_msec);
 	return;
 }
 

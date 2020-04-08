@@ -16,8 +16,10 @@ struct listctl {
 void list_init(struct listctl *list);
 int list_empty(struct listctl *list);
 struct list_item *list_popfront(struct listctl *list);
+void list_pushfront(struct listctl *list, struct list_item *item);
 void list_pushback(struct listctl *list, struct list_item *item);
 struct list_item* list_head(struct listctl *list);
 struct list_item* list_next(struct list_item *item);
+void list_insert(struct listctl *list, struct list_item *prev_item, struct list_item *new_item);
 
 #endif
