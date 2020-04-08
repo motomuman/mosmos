@@ -33,7 +33,7 @@ struct TASK *task_alloc()
 	new_task->tss.ecx = 0;
 	new_task->tss.edx = 0;
 	new_task->tss.ebx = 0;
-	new_task->tss.esp  = mem_alloc(1024 * 1024) + (1024 * 1024);
+	new_task->tss.esp  = mem_alloc(1024 * 1024, "tss_esp") + (1024 * 1024);
 	new_task->tss.ebp = 0;
 	new_task->tss.esi = 0;
 	new_task->tss.edi = 0;

@@ -34,7 +34,7 @@ void show_timer()
 // O(n)
 void set_timer(void (*func) (void *), void *arg, uint32_t time_msec)
 {
-	struct timer_entry *new_timer = (struct timer_entry *)mem_alloc(sizeof(struct timer_entry));
+	struct timer_entry *new_timer = (struct timer_entry *)mem_alloc(sizeof(struct timer_entry), "set_timer");
 	new_timer->func = func;
 	new_timer->arg = arg;
 	new_timer->tick = tick + time_msec/10;
@@ -72,7 +72,7 @@ void int_pit(int *esp) {
 			((struct timer_entry*)list_head(&timer_list))->tick <= tick) {
 		struct timer_entry* timer = (struct timer_entry*)list_popfront(&timer_list);
 		timer->func(timer->arg);
-		mem_free1m((uint32_t)timer);
+		mem_free(timer);
 	}
 
 	return;
@@ -98,7 +98,7 @@ void init_timer()
 {
 	list_init(&timer_list);
 
-	struct timer_entry *last_timer = (struct timer_entry *)mem_alloc(sizeof(struct timer_entry));
+	struct timer_entry *last_timer = (struct timer_entry *)mem_alloc(sizeof(struct timer_entry), "last_timer");
 	last_timer->func = NULL;
 	last_timer->arg = NULL;
 	last_timer->tick = 0;

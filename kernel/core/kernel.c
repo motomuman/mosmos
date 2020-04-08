@@ -19,11 +19,11 @@ void print_key(void *_ch) {
 	printstr_app("print_key: ");
 	printhex_app(*ch);
 	printstr_app("\n");
-	mem_free1m((uint32_t) ch);
+	mem_free(ch);
 }
 
 void int_keyboard(int *esp) {
-	uint8_t *ch = (uint8_t *)mem_alloc(1);
+	uint8_t *ch = (uint8_t *)mem_alloc(1, "int_key_ch");
 	pic_sendeoi(KEYBOARD_IRQ);
 	*ch = io_in8(0x0060);	// get input key code
 	printstr_log("keyint\n");
@@ -69,10 +69,10 @@ void kstart(void)
 	init_timer();
 	wq_init();
 
-	//init_arptable();
-	//init_r8169();
-	//uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 2;
-	//netdev_set_ip_addr(ip_addr);
+	init_arptable();
+	init_r8169();
+	uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 2;
+	netdev_set_ip_addr(ip_addr);
 
 	io_sti();
 

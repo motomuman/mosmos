@@ -137,8 +137,8 @@ void receive_packet() {
 
 
 		// Create work and push to workqueue
-		struct pktbuf * pbuf = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf));
-		uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * pkt_len);
+		struct pktbuf * pbuf = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf), "r8169_rx_pbuf");
+		uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * pkt_len, "r8169_rx_pbuf_buf");
 
 		memcpy(buf, pkt_data, pkt_len);
 		pbuf->pkt_len = pkt_len;

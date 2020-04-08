@@ -31,7 +31,7 @@ void wq_set_receiver(struct TASK *receiver)
 
 void wq_push(void (*func) (void *), void *arg)
 {
-	struct work_task *task = (struct work_task *)mem_alloc(sizeof(struct work_task));
+	struct work_task *task = (struct work_task *)mem_alloc(sizeof(struct work_task), "wq_task");
 	task->func = func;
 	task->arg = arg;
 	list_pushback(&wq.list, &task->link);
@@ -53,7 +53,7 @@ void wq_push_timer_func(void *_task)
 
 void wq_push_with_delay(void (*func) (void *), void *arg, uint32_t delay_msec)
 {
-	struct work_task *task = (struct work_task *)mem_alloc(sizeof(struct work_task));
+	struct work_task *task = (struct work_task *)mem_alloc(sizeof(struct work_task), "delaoed_wq_task");
 	task->func = func;
 	task->arg = arg;
 	set_timer(wq_push_timer_func, task, delay_msec);
@@ -65,7 +65,7 @@ void wq_execute()
 	if(!wq_empty()) {
 		struct work_task *task = (struct work_task*)list_popfront(&wq.list);
 		task->func(task->arg);
-		mem_free1m((uint32_t) task);
+		mem_free(task);
 	}
 }
 

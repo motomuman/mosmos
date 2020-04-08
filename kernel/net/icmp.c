@@ -17,10 +17,10 @@ void icmp_rx(struct pktbuf *rxpkt, uint32_t sip)
 		rxpkt->buf += sizeof(struct icmp_echo);
 
 		// Build icmp echo reply and send
-		struct pktbuf * txpkt = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf));
+		struct pktbuf * txpkt = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf), "icmp_reply_pbuf");
 		txpkt->pkt_len = rxpkt->pkt_len;
 
-		uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * txpkt->pkt_len);
+		uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * txpkt->pkt_len, "icmp_reply_pbuf_buf");
 		txpkt->buf = buf;
 		txpkt->buf_head = buf;
 
@@ -58,8 +58,8 @@ void icmp_rx(struct pktbuf *rxpkt, uint32_t sip)
 		// send icmp reply
 		ip_tx(txpkt, ntoh32(sip), IP_HDR_PROTO_ICMP);
 
-		mem_free1m((uint32_t)txpkt->buf_head);
-		mem_free1m((uint32_t)txpkt);
+		mem_free(txpkt->buf_head);
+		mem_free(txpkt);
 	}
 }
 
@@ -68,11 +68,11 @@ void icmp_tx(uint32_t dip)
 	printstr_app("icmp_tx: sends echo request\n");
 
 	// Build icmp echo reply and send
-	struct pktbuf * txpkt = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf));
+	struct pktbuf * txpkt = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf), "icmp_tx_pbuf");
 	txpkt->pkt_len =  (sizeof(struct ether_hdr) + sizeof(struct ip_hdr)
 				+ sizeof(struct icmp_hdr) + sizeof(struct icmp_echo));
 
-	uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * txpkt->pkt_len);
+	uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * txpkt->pkt_len, "icmp_tx_pbuf_buf");
 	txpkt->buf = buf;
 	txpkt->buf_head = buf;
 
@@ -107,6 +107,6 @@ void icmp_tx(uint32_t dip)
 	// send icmp reply
 	ip_tx(txpkt, dip, IP_HDR_PROTO_ICMP);
 
-	mem_free1m((uint32_t)txpkt->buf_head);
-	mem_free1m((uint32_t)txpkt);
+	mem_free(txpkt->buf_head);
+	mem_free(txpkt);
 }

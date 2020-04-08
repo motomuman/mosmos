@@ -48,10 +48,10 @@ void handle_arp_request(struct arp_etherip *arp)
 
 	// This is arp for me. will sends response
 	if(ntoh32(arp->dip) == netdev->ip_addr) {
-		struct pktbuf * pkt = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf));
+		struct pktbuf * pkt = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf), "arp_reply_pbuf");
 		pkt->pkt_len = sizeof(struct ether_hdr) + sizeof(struct arp_hdr) + sizeof(struct arp_etherip);
 
-		uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * pkt->pkt_len);
+		uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * pkt->pkt_len, "arp_reply_pbuf_buf");
 		pkt->buf = buf;
 		pkt->buf_head = buf;
 
@@ -85,8 +85,8 @@ void handle_arp_request(struct arp_etherip *arp)
 		// register arp request source ip and mac
 		register_arpentry(arp->smac, ntoh32(arp->sip));
 
-		mem_free1m((uint32_t)pkt->buf_head);
-		mem_free1m((uint32_t)pkt);
+		mem_free(pkt->buf_head);
+		mem_free(pkt);
 	} else {
 		printstr_app("ignore arp to: ");
 		printnum_app((ntoh32(arp->dip) >> 24) & 0xff);

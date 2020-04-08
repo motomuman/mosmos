@@ -1,12 +1,11 @@
 #ifndef _MEMORY_H_
 #define _MEMORY_H_
 
-void mem_init();
-void mem_free1m_batch(int start, int size);
-void mem_free1m(int addr);
-unsigned int mem_alloc(unsigned int);
-int mem_free_size();
+#include <stdint.h>
 
-unsigned int memtest(unsigned int start, unsigned int end);
+void mem_init();
+void mem_free(void* _addr);
+uint32_t mem_alloc(uint32_t size, char *name);
+int mem_free_size();
 
 #endif

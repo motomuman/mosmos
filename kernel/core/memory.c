@@ -1,68 +1,130 @@
 #include "nasmfunc.h"
 #include "memory.h"
 #include "print.h"
+#include "lib.h"
 
-#define MAX_MEMSIZE 2000
+#define MEM_TABLE_SIZE 2000
 
-// maintain memory with 1MB granurarity
-struct FREEMEM {
-	int len;
-	unsigned int addr[MAX_MEMSIZE];
+#define MAX_MEM_NAME 20
+
+// 1M bytes
+#define MEM_GRANULARITY 1024 * 1024
+
+#define MEM_INIT_FLAG 0x11223344
+#define MEM_FREE_FLAG 0x55667788
+#define MEM_USED_FLAG 0xaabbccdd
+
+struct memhdr {
+	uint32_t mem_flag;
+	char name[MAX_MEM_NAME + 1];
+	uint32_t start;
+	uint32_t size;
 };
 
-struct FREEMEM mem;
+// maintain memory with 1MB granurarity
+// TODO support flexible memory management
+struct memtbl {
+	uint32_t len;
+	uint32_t addr[MEM_TABLE_SIZE];
+};
+
+struct memtbl freemem;
+
+uint32_t memtest(unsigned int start, unsigned int end);
 
 void mem_init() {
-	int i;
-	mem.len = 0;
-	for(i = 0; i < MAX_MEMSIZE; i++){
-		mem.addr[i] = 0;
-	}
-
 	// Check memory size(start: 0x00600000, end: 0xffffffff)
-	int memsize = memtest(0x00600000, 0xffffffff);
-	printstr_log("total memory: ");
-	printnum_log(memsize/1024/1024);
-	printstr_log(" MB\n");
-	mem_free1m_batch(0x00a00000, memsize - 0x00a00000);
-	return;
-}
+	uint32_t memstart = 0x00a00000;
+	uint32_t memend = memtest(0x00a00000, 0xffffffff);
 
-void mem_free1m_batch(int start, int size) {
-	int i;
-	for(i = start; i + (1024 * 1024) <= start + size; i += (1024 * 1024)) {
-		mem_free1m(i);
+	freemem.len = 0;
+	while(memstart + MEM_GRANULARITY <= memend && freemem.len < MEM_TABLE_SIZE) {
+		freemem.addr[freemem.len] = memstart;
+		struct memhdr *hdr = (struct memhdr *)memstart;
+		hdr->mem_flag = MEM_FREE_FLAG;
+		memset((uint8_t*)hdr->name, 0, MAX_MEM_NAME);
+		hdr->start = memstart + sizeof(struct memhdr);
+		hdr->size = MEM_GRANULARITY - sizeof(struct memhdr);
+
+		freemem.len++;
+		memstart += MEM_GRANULARITY;
 	}
 	return;
 }
 
-void mem_free1m(int addr) {
-	if(mem.len == MAX_MEMSIZE - 1) {
+void mem_free(void *_addr) {
+	uint32_t addr = (uint32_t) _addr;
+	if(freemem.len >= MEM_TABLE_SIZE - 1) {
+		printstr_log("INVALID MEM FREE ERROR\n");
+		panic();
 		return;
 	}
-	mem.addr[mem.len] = addr;
-	mem.len++;
+
+	struct memhdr *entry = (struct memhdr *)(addr - sizeof(struct memhdr));
+	if(entry->mem_flag != MEM_USED_FLAG) {
+		printstr_log("Failed to free mem. Tried to free invalid address\n");
+		panic();
+		return;
+	}
+	entry->mem_flag = MEM_FREE_FLAG;
+
+	printstr_log("Mem Free ");
+	printstr_log(entry->name);
+	printstr_log(" ");
+	printhex_log(addr);
+	printstr_log(" (");
+	printnum_log(freemem.len);
+	printstr_log(")");
+	printstr_log("\n");
+
+	freemem.addr[freemem.len] = addr - sizeof(struct memhdr);
+	freemem.len++;
 	return;
 }
 
-unsigned int mem_alloc1m() {
-	if(mem.len == 0) {
+uint32_t mem_alloc(uint32_t size, char *name) {
+	if (size > MEM_GRANULARITY) {
+		printstr_log("ERROR: large memory req ");
+		printstr_log(name);
+		printstr_log("\n");
+		panic();
 		return 0;
 	}
-	mem.len--;
-	return mem.addr[mem.len];
-}
 
-unsigned int mem_alloc(unsigned int request) {
-	if (request > 1024 * 1024) {
-		printstr_log("ERROR: large memory req\n");
+	if(freemem.len == 0) {
+		printstr_log("ERROR: Don't have enough memory to allocate ");
+		printstr_log(name);
+		printstr_log("\n");
+		panic();
 		return 0;
 	}
-	return mem_alloc1m();
+
+	freemem.len--;
+	uint32_t addr = freemem.addr[freemem.len];
+	struct memhdr *entry = (struct memhdr *)(addr);
+
+	printstr_log("Mem Alloc ");
+	printstr_log(name);
+	printstr_log(" ");
+	printhex_log(addr);
+	printstr_log(" (");
+	printnum_log(freemem.len);
+	printstr_log(")");
+	printstr_log("\n");
+
+	if(entry->mem_flag != MEM_FREE_FLAG) {
+		printstr_log("ERROR: Tried to allocate invalid address\n");
+		panic();
+		return 0;
+	}
+	entry->mem_flag = MEM_USED_FLAG;
+	strncpy(entry->name, name, MAX_MEM_NAME);
+
+	return entry->start;
 }
 
 int mem_free_size() {
-	return mem.len;
+	return freemem.len;
 }
 
 // 18th bit of eflags reg is AC flag.
@@ -71,7 +133,7 @@ int mem_free_size() {
 #define CR0_CACHE_DISABLE 	0x60000000
 
 // max of unsigned int is 4,294,967,295 (~=4GB)
-unsigned int memtest(unsigned int start, unsigned int end)
+uint32_t memtest(unsigned int start, unsigned int end)
 {
 	char flag486 = 0;
 	unsigned int eflag, cr0, i;
