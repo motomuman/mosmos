@@ -1,10 +1,11 @@
+#include <stdint.h>
 #include "print.h"
 #include "nasmfunc.h"
 #include "int.h"
 #include "dsctbl.h"
 #include "timer.h"
 #include "memory.h"
-#include "task.h"
+//#include "task.h"
 #include "r8169.h"
 #include "workqueue.h"
 #include "ether.h"
@@ -12,7 +13,7 @@
 #include "arp.h"
 #include "icmp.h"
 
-int *FONT_ADR;
+#define NULL 0
 
 void print_key(void *_ch) {
 	uint8_t *ch = (uint8_t *)_ch;
@@ -79,25 +80,25 @@ void kstart(void)
 	set_timer(hello, NULL, 1000);
 	set_timer(hello2, NULL, 3000);
 
-	struct TASK *task_a;
-	struct TASK *task_b;
-	struct TASK *task_c;
-	task_a = task_init();
-	task_b = task_alloc();
-	task_b->tss.eip = (int) &task_b_main;
-	task_run(task_b);
-
-	task_c = task_alloc();
-	task_c->tss.eip = (int) &task_c_main;
-	task_run(task_c);
-
-	wq_set_receiver(task_a);
+//	struct TASK *task_a;
+//	struct TASK *task_b;
+//	struct TASK *task_c;
+//	task_a = task_init();
+//	task_b = task_alloc();
+//	task_b->tss.eip = (uint64_t) &task_b_main;
+//	task_run(task_b);
+//
+//	task_c = task_alloc();
+//	task_c->tss.eip = (int) &task_c_main;
+//	task_run(task_c);
+//
+//	wq_set_receiver(task_a);
 
 	while(1){
 		io_cli();
 		if(wq_empty()) {
-			printstr_log("task sleep\n");
-			task_sleep();
+		//	printstr_log("task sleep\n");
+		//	task_sleep();
 			io_sti();
 		} else {
 			io_sti();

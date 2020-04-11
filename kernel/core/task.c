@@ -24,7 +24,7 @@ struct TASK *task_alloc()
 	new_task->flag = TASK_INITIALIZED;
 	new_task->sel = taskctl.next_task_sel;
 	taskctl.next_task_sel++;
-	set_segmdesc(gdt + new_task->sel, 103, (int) &new_task->tss, AR_TSS32);
+	set_segmdesc(gdt + new_task->sel, 103, (uint64_t) &new_task->tss, AR_TSS32);
 
 	new_task->tss.ldtr = 0;
 	new_task->tss.iomap = 0x40000000;

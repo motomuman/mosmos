@@ -6,8 +6,8 @@
 AS = nasm
 CC = gcc
 
-ASFLAGS = -f elf
-CFLAGS  =  -Wall -m32 -g -fleading-underscore -fno-builtin -nostdlib -I core -I dev -I lib -I net
+ASFLAGS = -f elf64
+CFLAGS  =  -Wall -g -fleading-underscore -fno-builtin -nostdlib -I core -I dev -I lib -I net
 
 OBJS_KERNEL = core/kasm.o
 OBJS_KERNEL += core/kernel.o
@@ -15,7 +15,7 @@ OBJS_KERNEL += core/int.o
 OBJS_KERNEL += core/dsctbl.o
 OBJS_KERNEL += core/timer.o
 OBJS_KERNEL += core/memory.o
-OBJS_KERNEL += core/task.o
+#OBJS_KERNEL += core/task.o
 OBJS_KERNEL += core/workqueue.o
 OBJS_KERNEL += core/netdev.o
 OBJS_KERNEL += core/pci.o

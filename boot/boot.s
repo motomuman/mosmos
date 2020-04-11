@@ -202,12 +202,15 @@ stage_video_mode:
 ; check description in kernel/ksctbl.c
 ALIGN 4, db 0
 GDT:			dq	0x00_0_0_0_0_000000_0000	; NULL
-.cs:			dq	0x00_C_F_9_A_000000_FFFF	; CODE 4G
+.cs64:                  dq      0x00_A_F_9_A_000000_FFFF        ; CODE 4G (64bit)
 .ds:			dq	0x00_C_F_9_2_000000_FFFF	; DATA 4G
+.cs:			dq	0x00_C_F_9_A_000000_FFFF	; CODE 4G
 .gdt_end:
 
 SEL_CODE	equ	.cs - GDT	; segment reg value to use code segment
 SEL_DATA	equ	.ds - GDT	; segment reg value to use data segment
+SEL_CODE_64     equ     .cs64 - GDT     ; segment reg value to use code64 segment
+
 
 GDTR:	dw	GDT.gdt_end - GDT - 1
 	dd	GDT
@@ -230,7 +233,6 @@ stage_move_protect_mode:
 
 	jmp	$ + 2		; jump to discard prefetch
 
-
 [BITS 32]
 	db	0x66
 	jmp	SEL_CODE:CODE_32
@@ -244,11 +246,102 @@ CODE_32:
 	mov	gs, ax
 	mov	ss, ax
 
+	; Relocate kernel (will replace this by paging)
 	mov	ecx, (KERNEL_SIZE) / 4
 	mov	esi, BOOT_END
 	mov	edi, KERNEL_LOAD
 	cld
 	rep 	movsd
-	jmp	KERNEL_LOAD
+
+;----------------------------------------------
+; setup page table. Description is in the bottom of this file!!
+;----------------------------------------------
+PAGE_SETUP:
+	; Enable Page Address Extension (PAE)
+	mov     eax, 0x20
+	mov     cr4, eax
+
+	;Initialize page table by zero
+	mov     ebx, PGTBL
+	mov     edi, ebx
+	mov     eax, 0
+	mov     ecx, 512*8*6/4			; 512 entries * 8bytes (64bit) * 6table / 4bytes
+	rep     stosd           		; write eax to [edi, edi + ecx]
+
+	; level3
+	mov	eax, PGTBL + 0x1000 + 0x007 	;PGTBL + 0x1000 is address of level2 table
+						;0x007 means R/W
+	mov	[ebx], eax
+
+	; Level2
+LEVEL2:
+	mov     edi, PGTBL + 0x1000 		; entry address
+	mov     eax, PGTBL + 0x2000 + 0x007 	; PGTBL + 0x2000 is start address of level1 table
+						; 0x007 means R/W
+	mov     ecx, 4				; Create 4 entries in level2
+.loop:
+	mov     [edi], eax
+	add     edi, 8
+	add     eax, 0x1000
+	loop    .loop
+
+LEVEL1:
+	mov     edi, PGTBL + 0x2000		; PGTBL + 0x2000 is start address of level1 table
+	mov     eax, 0x083			; (10000011) R/W root access, 2MB paging
+	mov     ecx, 512*4			; 4tables
+.loop:
+	mov     [edi], eax
+	add     edi, 8
+	add     eax, 0x00200000
+	loop    .loop
+
+	; Set page table register
+	mov     cr3, ebx
+
+	; Enable long mode
+	mov     ecx, 0xc0000080
+	rdmsr
+	bts     eax, 8
+	wrmsr
+
+	; Activate page translation and long mode
+	mov     eax, 0x80000001
+	mov     cr0, eax
+
+	;jmp to long-mode
+
+	;worked
+	jmp SEL_CODE_64:KERNEL_LOAD
+
+	;worked
+	;db 0xea
+	;dd CODE_64
+	;dw SEL_CODE_64
+
+	;did not work
+	;push    SEL_CODE_64
+	;push    KERNEL_LOAD
+	;push    CODE_64
+	;lret
 
 	times 	BOOT_SIZE - ($ - $$)	db	0
+
+; I used 2MB for each page. And used 2048 pages to map 4GB liner
+; I use 1table(entry0) in level3, 1table(entry0-3) in level2, and 4table (entry0 ~ 511) in level6
+; Table occupies 512 entries * 8bytes * 6table = 24KB
+;
+;          Level3       Level2           Leve1
+;
+;          (PGTBL) (PGTBL + 0x1000)    (PGTBL + 0x2000)
+; CR3 ->   Entry0  --+-- Entry0 ------+-- Entry0
+;          Entry1    +-- Entry1 --+   +-- Entry1
+;            .       +     .      |   |     .
+;            .       +     .      |   |     .
+;          Entry511  +-- Entry511 |   +-- Entry511
+;                                 |
+;                                 |   (PGTBL + 0x3000)
+;                                 +------ Entry0
+;                                 +------ Entry1
+;                                 |         .
+;                                 |         .
+;                                 +------ Entry511

@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "print.h"
 
 // width: 640 bit, height: 480 bit. Each row has 80 bytes (640 bits)
@@ -37,7 +38,7 @@
 // |                   |                  | 29
 // +-------------------+------------------+
 
-int FONT_ADR;
+uint64_t FONT_ADR;
 
 struct SCREEN {
 	int width, height;
@@ -64,27 +65,23 @@ void initscreen() {
 	logscreen.x = 0;
 	logscreen.y = 0;
 
-	int i, width;
-	char *p;
+	int width;
+	uint64_t p;
 	for(width = 0; width < 3; width++) {
-		for (i = 0xa0000 + 40 + 80 * width; i <= 0xaffff; i += 80 * 16) {
-			p = (char *) i;
-			*p = 0x10;
+		for (p = 0xa0000 + 40 + 80 * width; p <= 0xaffff; p += 80 * 16) {
+			*(uint8_t *) p = 0x10;
 		}
 	}
 }
 
 void clear(struct SCREEN *screen) {
-	int i;
-	char *p;
-
-	for (i = 0xa0000; i <= 0xaffff; i += 1) {
-		int x = (i - 0xa0000) % 80;
-		int y = (i - 0xa0000) / (80 * 16);
+	uint64_t p;
+	for (p = 0xa0000; p <= 0xaffff; p += 1) {
+		int x = (p - 0xa0000) % 80;
+		int y = (p - 0xa0000) / (80 * 16);
 		if( x >= screen->startx && x < screen->startx + screen->width
 				&& y >= screen->starty && y < screen->starty + screen->height ) {
-			p = (char *) i;
-			*p = 0x00;
+			*(uint8_t *) p = 0x00;
 		}
 	}
 }
@@ -109,13 +106,13 @@ void putchar(struct SCREEN *screen, char ch) {
 		int i;
 		int y = screen->starty + screen->y;
 		int x = screen->startx + screen->x;
-		int vaddr = 0xa0000 + (80 * 16 * y) + x;
-		char *chaddr = (char *)(FONT_ADR + (ch<<4));
+		uint64_t vaddr = 0xa0000 + (80 * 16 * y) + x;
+		uint8_t *fontaddr = (uint8_t *)(FONT_ADR + (ch<<4));
 
 		for (i = 0; i < 16; i++){
-			*(char *)vaddr = (*chaddr);
+			*(uint8_t *)vaddr = (*fontaddr);
 			vaddr += 80;
-			chaddr += 1;
+			fontaddr += 1;
 		}
 		screen->x++;
 	}
@@ -178,7 +175,7 @@ void printnum_log(int num) {
 	printnum(&logscreen, num);
 }
 
-void printhex(struct SCREEN *screen, int num) {
+void printhex(struct SCREEN *screen, uint64_t num) {
 	char buf[50];
 	int len = 0;
 	while(num > 0){

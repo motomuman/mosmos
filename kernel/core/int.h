@@ -7,7 +7,7 @@
 #define KEYBOARD_IRQ 1
 
 void init_interrupt();
-void register_interrupt(int irq, uint32_t handler);
+void register_interrupt(int irq, void * handler);
 void pic_sendeoi(int irq);
 
 #endif

@@ -39,7 +39,7 @@ void pic_clearmask(int irq)
 	}
 }
 
-void register_interrupt(int irq, uint32_t handler) {
+void register_interrupt(int irq, void* handler) {
 	pic_clearmask(irq);
 	set_idt(irq + 0x20, handler);
 }
@@ -47,7 +47,7 @@ void register_interrupt(int irq, uint32_t handler) {
 void init_interrupt()
 {
 	init_pic();
-	register_interrupt(KEYBOARD_IRQ, (uint32_t) asm_int_keyboard);
+	register_interrupt(KEYBOARD_IRQ, asm_int_keyboard);
 }
 
 void pic_sendeoi(int irq)

@@ -133,7 +133,12 @@ void receive_packet() {
 		}
 
 		int32_t pkt_len = (rx_desc->opts1 & 0x00001fff) - 4; //lower 13bit - crc
-		uint8_t *pkt_data = (uint8_t *) rx_desc->low_buf;
+
+		uint64_t pkt_data_addr = rx_desc->high_buf;
+		pkt_data_addr <<= 32;
+		pkt_data_addr += rx_desc->low_buf;
+
+		uint8_t *pkt_data = (uint8_t *) pkt_data_addr;
 
 
 		// Create work and push to workqueue
@@ -186,8 +191,13 @@ void r8169_tx(struct pktbuf *pkt) {
 		return;
 	}
 
-	uint8_t *tx_pkt_data = (uint8_t *) tx_desc->low_buf;
-	memcpy(tx_pkt_data, pkt->buf_head, pkt->pkt_len);
+	uint64_t tx_pkt_addr = tx_desc->high_buf;
+	tx_pkt_addr <<= 32;
+	tx_pkt_addr += tx_desc->low_buf;
+
+
+	uint8_t *tx_pkt = (uint8_t *) tx_pkt_addr;
+	memcpy(tx_pkt, pkt->buf_head, pkt->pkt_len);
 
 	tx_desc->opts1 = DescOwn | FirstFrag | LastFrag | pkt->pkt_len;
 
@@ -204,13 +214,15 @@ void r8169_tx(struct pktbuf *pkt) {
 
 void setup_rx_descriptors()
 {
-	int i;
+	uint64_t i;
 	for(i = 0; i < RX_RING_SIZE; i++)
 	{
 		r8169_device.rx_ring[i].opts1 = (DescOwn | (RX_BUF_SIZE & 0xFFFF));
 		r8169_device.rx_ring[i].opts2 = 0;
-		r8169_device.rx_ring[i].low_buf = (uint32_t) (r8169_device.rx_buf) + i * RX_BUF_SIZE;
-		r8169_device.rx_ring[i].high_buf = 0;
+
+		uint64_t rx_buf_addr = ((uint64_t)r8169_device.rx_buf) + i * RX_BUF_SIZE;
+		r8169_device.rx_ring[i].low_buf = (rx_buf_addr) & 0xFFFFFFFF;
+		r8169_device.rx_ring[i].high_buf = (rx_buf_addr >> 32) & 0xFFFFFFFF;;
 	}
 
 	r8169_device.rx_ring[RX_RING_SIZE - 1].opts1 = (DescOwn | RingEnd | (RX_BUF_SIZE & 0xFFFF));
@@ -255,14 +267,18 @@ int init_r8169() {
 	io_out32(ioaddr + RxConfig, RxCfgFIFONone | RxCfgDMAUnlimited |
 			AcceptBroadcast | AcceptMulticast | AcceptMyPhys | AcceptAllPhys);
 	io_out16(ioaddr + RxMaxSize, RX_BUF_SIZE);
-	io_out32(ioaddr + RxDescAddrLow, (uint32_t)&r8169_device.rx_ring[0]);
-	io_out32(ioaddr + RxDescAddrHigh, 0);
+
+	uint64_t rx_ring_addr = (uint64_t) r8169_device.rx_ring;
+	io_out32(ioaddr + RxDescAddrLow, rx_ring_addr & 0xFFFFFFFF);
+	io_out32(ioaddr + RxDescAddrHigh, (rx_ring_addr >> 32) & 0xFFFFFFFF);
 
 	// TxConfig
 	io_out32(ioaddr + TxConfig, TxIFG96 | TxCfgDMAUnlimited);
 	io_out8(ioaddr + EarlyTxThres, NoEarlyTx);
-	io_out32(ioaddr + TxDescStartAddrLow, (uint32_t)&r8169_device.tx_ring[0]);
-	io_out32(ioaddr + TxDescStartAddrHigh, 0);
+
+	uint64_t tx_rint_addr = (uint64_t)r8169_device.tx_ring;
+	io_out32(ioaddr + TxDescStartAddrLow, tx_rint_addr & 0xFFFFFFFF);
+	io_out32(ioaddr + TxDescStartAddrHigh, (tx_rint_addr >> 32) & 0xFFFFFFFF);
 
 	// Enable interruption
 	io_out16(ioaddr + IntrMask, PCIErr | PCSTimeout | RxOverflow |
@@ -272,7 +288,7 @@ int init_r8169() {
 	io_out8(ioaddr + Cfg9346, Cfg9346_Lock);
 
 	// register interrupt handler
-	register_interrupt(r8169_device.pcidev.irq, (uint32_t) asm_int_r8169);
+	register_interrupt(r8169_device.pcidev.irq, asm_int_r8169);
 
 	// register net_device
 	int i;

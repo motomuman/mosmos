@@ -12,6 +12,8 @@ KERNEL_LOAD	equ	0x0010_1000
 KERNEL_SIZE	equ	(1024 * 16)
 KERNEL_SECT	equ	(KERNEL_SIZE/SECT_SIZE)
 
+PGTBL          	equ     0x00079000
+
 struc drive
 	.no	resw	1
 	.cyln	resw	1

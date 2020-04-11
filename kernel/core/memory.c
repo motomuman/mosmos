@@ -17,25 +17,26 @@
 struct memhdr {
 	uint32_t mem_flag;
 	char name[MAX_MEM_NAME + 1];
-	uint32_t start;
-	uint32_t size;
+	uint64_t start;
+	uint64_t size;
 };
 
 // maintain memory with 1MB granurarity
 // TODO support flexible memory management
 struct memtbl {
-	uint32_t len;
-	uint32_t addr[MEM_TABLE_SIZE];
+	uint64_t len;
+	uint64_t addr[MEM_TABLE_SIZE];
 };
 
 struct memtbl freemem;
 
-uint32_t memtest(unsigned int start, unsigned int end);
-
 void mem_init() {
 	// Check memory size(start: 0x00600000, end: 0xffffffff)
-	uint32_t memstart = 0x00a00000;
-	uint32_t memend = memtest(0x00a00000, 0xffffffff);
+	uint64_t memstart = 0x00a00000;
+	// Hard code memory size
+	// TODO Get memory size from somewhere
+	//uint64_t memend = memtest(0x00a00000, 0xffffffff);
+	uint64_t memend = 0x5DC00000; //1.5G
 
 	freemem.len = 0;
 	while(memstart + MEM_GRANULARITY <= memend && freemem.len < MEM_TABLE_SIZE) {
@@ -53,7 +54,7 @@ void mem_init() {
 }
 
 void mem_free(void *_addr) {
-	uint32_t addr = (uint32_t) _addr;
+	uint64_t addr = (uint64_t) _addr;
 	if(freemem.len >= MEM_TABLE_SIZE - 1) {
 		printstr_log("INVALID MEM FREE ERROR\n");
 		panic();
@@ -82,7 +83,7 @@ void mem_free(void *_addr) {
 	return;
 }
 
-uint32_t mem_alloc(uint32_t size, char *name) {
+uint64_t mem_alloc(uint32_t size, char *name) {
 	if (size > MEM_GRANULARITY) {
 		printstr_log("ERROR: large memory req ");
 		printstr_log(name);
@@ -100,7 +101,7 @@ uint32_t mem_alloc(uint32_t size, char *name) {
 	}
 
 	freemem.len--;
-	uint32_t addr = freemem.addr[freemem.len];
+	uint64_t addr = freemem.addr[freemem.len];
 	struct memhdr *entry = (struct memhdr *)(addr);
 
 	printstr_log("Mem Alloc ");
@@ -125,51 +126,4 @@ uint32_t mem_alloc(uint32_t size, char *name) {
 
 int mem_free_size() {
 	return freemem.len;
-}
-
-// 18th bit of eflags reg is AC flag.
-// in 386 AC flag is always 0
-#define EFLAGS_AC_BIT	 	0x00040000
-#define CR0_CACHE_DISABLE 	0x60000000
-
-// max of unsigned int is 4,294,967,295 (~=4GB)
-uint32_t memtest(unsigned int start, unsigned int end)
-{
-	char flag486 = 0;
-	unsigned int eflag, cr0, i;
-
-	// Check 386 or 486
-	// try to enable ac-bit
-	eflag = io_load_eflags();
-	eflag |= EFLAGS_AC_BIT; //enable ac bit
-	io_store_eflags(eflag);
-
-	// We can not enable ac bit in 386
-	eflag = io_load_eflags();
-	if((eflag & EFLAGS_AC_BIT) != 0) {
-		flag486 = 1;
-	}
-	eflag &= ~EFLAGS_AC_BIT;
-	io_store_eflags(eflag);
-
-	// Disable cache
-	// Cache was introduced to cpu equal to or after 486
-	// memtest measure the memory size by
-	// writing data to memory and reading data from memory
-	// If cache is enabled, we can read data from address which exceeds physicall memory size
-	if(flag486 != 0) {
-		cr0 = load_cr0();
-		cr0 |= CR0_CACHE_DISABLE;
-		store_cr0(cr0);
-	}
-
-	i = memtest_sub(start, end);
-
-	if (flag486 != 0) {
-		cr0 = load_cr0();
-		cr0 &= ~CR0_CACHE_DISABLE;
-		store_cr0(cr0);
-	}
-
-	return i;
 }

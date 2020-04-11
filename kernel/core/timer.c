@@ -12,25 +12,25 @@ struct timer_entry {
 	void (*func) (void *);
 	void *arg;
 };
-
+//
 struct listctl timer_list;
 uint32_t tick;
-
-void show_timer()
-{
-	struct timer_entry *timer;
-
-	printstr_app("cur t: ");
-	for(timer = (struct timer_entry *) list_head(&timer_list); timer != NULL; timer = (struct timer_entry *)list_next(&timer->link)) {
-		printnum_app(timer->tick);
-		printstr_app("(");
-		printhex_app((uint32_t)timer);
-		printstr_app(")");
-		printstr_app(":");
-	}
-	printstr_app("\n");
-}
-
+//
+//void show_timer()
+//{
+//	struct timer_entry *timer;
+//
+//	printstr_app("cur t: ");
+//	for(timer = (struct timer_entry *) list_head(&timer_list); timer != NULL; timer = (struct timer_entry *)list_next(&timer->link)) {
+//		printnum_app(timer->tick);
+//		printstr_app("(");
+//		printhex_app((uint32_t)timer);
+//		printstr_app(")");
+//		printstr_app(":");
+//	}
+//	printstr_app("\n");
+//}
+//
 // O(n)
 void set_timer(void (*func) (void *), void *arg, uint32_t time_msec)
 {
@@ -64,8 +64,8 @@ void int_pit(int *esp) {
 	tick++;
 	if(tick%200 == 0) {
 		printstr_log("task_switch: ");
-		task_show();
-		task_switch();
+		//task_show();
+		//task_switch();
 	}
 
 	while(!list_empty(&timer_list) &&
@@ -90,7 +90,7 @@ void init_pit()
 	io_out8(0x0040, 0x9c); // lower 8 bit
 	io_out8(0x0040, 0x2e); // higher 8 bit
 
-	register_interrupt(0, (uint32_t) asm_int_pit);
+	register_interrupt(0, asm_int_pit);
 	return;
 }
 

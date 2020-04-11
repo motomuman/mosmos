@@ -1,6 +1,6 @@
 section .text
 
-[BITS 32]
+[BITS 64]
 
 global kentry
 global _FONT_ADR
@@ -9,13 +9,13 @@ extern _kstart
 
 kentry:
 	; Save font addr
-	mov 	esi, 0x7c00 + 512
-	movzx	eax, word [esi + 0]
-	movzx	ebx, word [esi + 2]
-	shl	eax, 4
-	add 	eax, ebx
-	mov	[_FONT_ADR], eax
+	mov 	rsi, 0x7c00 + 512
+	movzx	rax, word [rsi + 0]
+	movzx	rbx, word [rsi + 2]
+	shl	rax, 4
+	add 	rax, rbx
+	mov	[_FONT_ADR], rax
 
 	call 	_kstart
 
-_FONT_ADR: dd 0
+_FONT_ADR: dd 0,0
