@@ -2,16 +2,19 @@
 #include "print.h"
 #include "nasmfunc.h"
 
-void memcpy(uint8_t *dst, uint8_t *src, uint32_t size)
+void memcpy(void *_dst, void *_src, uint32_t size)
 {
+	uint8_t *dst = (uint8_t *)_dst;
+	uint8_t *src = (uint8_t *)_src;
 	int i;
 	for(i = 0; i < size; i++){
 		dst[i] = src[i];
 	}
 }
 
-void memset(uint8_t *dst, uint8_t val, uint32_t size)
+void memset(void *_dst, uint8_t val, uint32_t size)
 {
+	uint8_t *dst = (uint8_t *)_dst;
 	int i;
 	for(i = 0; i < size; i++){
 		dst[i] = val;

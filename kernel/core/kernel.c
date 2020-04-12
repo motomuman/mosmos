@@ -5,7 +5,7 @@
 #include "dsctbl.h"
 #include "timer.h"
 #include "memory.h"
-//#include "task.h"
+#include "task.h"
 #include "r8169.h"
 #include "workqueue.h"
 #include "ether.h"
@@ -37,7 +37,7 @@ void task_b_main() {
 	while(1) {
 		for(i = 0; i < 200000000; i++){
 		}
-		printstr_log("task_b_main\n");
+		printstr_app("task_b_main\n");
 	}
 }
 
@@ -46,7 +46,7 @@ void task_c_main() {
 	while(1) {
 		for(i = 0; i < 200000000; i++){
 		}
-		printstr_log("task_c_main\n");
+		printstr_app("task_c_main\n");
 	}
 }
 
@@ -60,39 +60,42 @@ void hello2() {
 	set_timer(hello2, NULL, 2000);
 }
 
+
 void kstart(void)
 {
 	initscreen();
+
 	init_gdtidt();
+	init_tss();
+	tr_load();
+
 	init_interrupt();
 	mem_init();
 	init_pit();
 	init_timer();
 	wq_init();
 
-	init_arptable();
-	init_r8169();
-	uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 2;
-	netdev_set_ip_addr(ip_addr);
+	//init_arptable();
+	//init_r8169();
+	//uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 2;
+	//netdev_set_ip_addr(ip_addr);
 
 	io_sti();
 
 	set_timer(hello, NULL, 1000);
 	set_timer(hello2, NULL, 3000);
 
-//	struct TASK *task_a;
-//	struct TASK *task_b;
-//	struct TASK *task_c;
-//	task_a = task_init();
-//	task_b = task_alloc();
-//	task_b->tss.eip = (uint64_t) &task_b_main;
-//	task_run(task_b);
-//
-//	task_c = task_alloc();
-//	task_c->tss.eip = (int) &task_c_main;
-//	task_run(task_c);
-//
-//	wq_set_receiver(task_a);
+	struct TASK *task_a;
+	struct TASK *task_b;
+	struct TASK *task_c;
+	task_a = task_init();
+	task_b = task_alloc(task_b_main);
+	task_run(task_b);
+
+	task_c = task_alloc(task_c_main);
+	task_run(task_c);
+
+	wq_set_receiver(task_a);
 
 	while(1){
 		io_cli();

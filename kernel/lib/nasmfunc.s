@@ -110,33 +110,61 @@ _asm_int_keyboard:
 	iretq
 
 _asm_int_pit:
-	push    rax
-	push    rcx
-	push    rdx
-	push    rbx
-	push    rbp
-	push    rsi
-	push    rdi
+	push	rax
+	push	rbx
+	push	rcx
+	push	rdx
 	push	r8
 	push	r9
 	push	r10
 	push	r11
+	push	r12
+	push	r13
+	push	r14
+	push	r15
+	push	rsi
+	push	rdi
+	push	rbp
+	push	fs
+	push	gs
 
-	call 	_int_pit
+	call 	_int_pit 	; int_pit returns uint64_t rsp[2];
+				; if no need to switch context
+				; rsp[0], rsp[1] is NULL
+				;
+				; if need to switch context
+				; rsp[0] is pointer to current task rsp
+				; rsp[1] is pointer to next task rsp
 
+	mov	rdi, [rax]	; rdi = rsp[0] (*current_rsp)
+	cmp	rdi, 0		; if rdi == NULL
+	jz	.restore_regs 	; skip context switch
+
+	mov	rsi, [rax + 8]	; rsi = rsp[1] (*next_rsp)
+
+	mov	rax, [rsi]	; rax = next_rsp
+	mov	[rdi], rsp	; save current rsp
+	mov	rsp, rax	; set next rsp
+
+.restore_regs:
+	pop	gs
+	pop	fs
+	pop	rbp
+	pop	rdi
+	pop	rsi
+	pop	r15
+	pop	r14
+	pop	r13
+	pop	r12
 	pop	r11
 	pop	r10
 	pop	r9
 	pop	r8
-	pop     rdi
-	pop     rsi
-	pop     rbp
-	pop     rbx
-	pop     rdx
-	pop     rcx
-	pop     rax
+	pop	rdx
+	pop	rcx
+	pop	rbx
+	pop	rax
 	iretq
-
 
 _asm_int_r8169:
 	push    rax
@@ -180,8 +208,3 @@ _load_gdtr:
 _load_tr:
 	ltr	di
 	ret
-;
-;; taskswitch(int eip, int cs)
-;_farjmp:
-;	jmp	far [esp+4]
-;	ret
