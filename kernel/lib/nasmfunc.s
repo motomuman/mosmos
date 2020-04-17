@@ -15,10 +15,12 @@ global _load_idtr
 global _load_gdtr
 global _load_tr
 global _farjmp
+global _task_switch
 
 extern _int_keyboard
 extern _int_pit
 extern _r8169_int_handler
+extern _schedule
 
 ; rdi - used to pass 1st argument to functions
 ; rsi - used to pass 2nd argument to functions
@@ -110,23 +112,17 @@ _asm_int_keyboard:
 	iretq
 
 _asm_int_pit:
-	push	rax
-	push	rbx
-	push	rcx
-	push	rdx
+	push    rax
+	push    rcx
+	push    rdx
+	push    rbx
+	push    rbp
+	push    rsi
+	push    rdi
 	push	r8
 	push	r9
 	push	r10
 	push	r11
-	push	r12
-	push	r13
-	push	r14
-	push	r15
-	push	rsi
-	push	rdi
-	push	rbp
-	push	fs
-	push	gs
 
 	call 	_int_pit 	; int_pit returns uint64_t rsp[2];
 				; if no need to switch context
@@ -136,34 +132,17 @@ _asm_int_pit:
 				; rsp[0] is pointer to current task rsp
 				; rsp[1] is pointer to next task rsp
 
-	mov	rdi, [rax]	; rdi = rsp[0] (*current_rsp)
-	cmp	rdi, 0		; if rdi == NULL
-	jz	.restore_regs 	; skip context switch
-
-	mov	rsi, [rax + 8]	; rsi = rsp[1] (*next_rsp)
-
-	mov	rax, [rsi]	; rax = next_rsp
-	mov	[rdi], rsp	; save current rsp
-	mov	rsp, rax	; set next rsp
-
-.restore_regs:
-	pop	gs
-	pop	fs
-	pop	rbp
-	pop	rdi
-	pop	rsi
-	pop	r15
-	pop	r14
-	pop	r13
-	pop	r12
 	pop	r11
 	pop	r10
 	pop	r9
 	pop	r8
-	pop	rdx
-	pop	rcx
-	pop	rbx
-	pop	rax
+	pop     rdi
+	pop     rsi
+	pop     rbp
+	pop     rbx
+	pop     rdx
+	pop     rcx
+	pop     rax
 	iretq
 
 _asm_int_r8169:
@@ -207,4 +186,98 @@ _load_gdtr:
 ; void load_tr(uint16_t tr);
 _load_tr:
 	ltr	di
+	ret
+
+_task_switch:
+	push	rbp
+	push	rbx
+	push	rcx
+	push	rdx
+	push	rdi
+	push	rsi
+	push	r8
+	push	r9
+	push	r10
+	push	r11
+	push	r12
+	push	r13
+	push	r14
+	push	r15
+
+	; save stack frames
+	mov	rdx,rsp
+	mov	rax, 16
+	push	rax	;ss
+	push	rdx	;rsp
+	pushfq		;rflags
+	mov	rax, 8
+	push	rax	;cs
+	mov	rax, .return_to_task_switch_caller
+	push	rax	;rip
+
+	push	rax
+	push	rbx
+	push	rcx
+	push	rdx
+	push	r8
+	push	r9
+	push	r10
+	push	r11
+	push	r12
+	push	r13
+	push	r14
+	push	r15
+	push	rsi
+	push	rdi
+	push	rbp
+	push	fs
+	push	gs
+
+
+	call 	_schedule 	; _schedule returns uint64_t rsp[2];
+				; rsp[0] is pointer to current task rsp
+				; rsp[1] is pointer to next task rsp
+
+	mov	rdi, [rax]	; rdi = rsp[0] (*current_rsp)
+	mov	rsi, [rax + 8]	; rsi = rsp[1] (*next_rsp)
+	mov	rax, [rsi]	; rax = next_rsp
+	mov	[rdi], rsp	; save current rsp
+	mov	rsp, rax	; set next rsp
+
+	; pop next task registers and jump to next task
+	; possibly jump to .return_to_task_switch_caller of next task
+	pop	gs
+	pop	fs
+	pop	rbp
+	pop	rdi
+	pop	rsi
+	pop	r15
+	pop	r14
+	pop	r13
+	pop	r12
+	pop	r11
+	pop	r10
+	pop	r9
+	pop	r8
+	pop	rdx
+	pop	rcx
+	pop	rbx
+	pop	rax
+	iretq
+
+.return_to_task_switch_caller:
+	pop	r15
+	pop	r14
+	pop	r13
+	pop	r12
+	pop	r11
+	pop	r10
+	pop	r9
+	pop	r8
+	pop	rsi
+	pop	rdi
+	pop	rdx
+	pop	rcx
+	pop	rbx
+	pop	rbp
 	ret

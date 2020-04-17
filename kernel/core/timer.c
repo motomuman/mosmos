@@ -61,22 +61,13 @@ void set_timer(void (*func) (void *), void *arg, uint32_t time_msec)
 
 #define NULL 0
 
-/*
- * context switch in asm_int_pit uses rsp[2] for context switching
- * rsp[0]: *current_rsp
- * rsp[1]: *next_rsp
- */
-uint64_t *rsp[2];
-
-uint64_t** int_pit(int *esp) {
+void int_pit(int *esp) {
 	pic_sendeoi(PIT_IRQ);
 	tick++;
-	memset(rsp, 0, 2*sizeof(uint64_t));
 	if(tick%200 == 0) {
 		printstr_log("task_switch: \n");
-		//thread_scheduler(rsp);
 		task_show();
-		task_switch(rsp);
+		task_switch();
 	}
 
 	while(!list_empty(&timer_list) &&
@@ -86,7 +77,7 @@ uint64_t** int_pit(int *esp) {
 		mem_free(timer);
 	}
 
-	return rsp;
+	return;
 }
 
 void init_pit()

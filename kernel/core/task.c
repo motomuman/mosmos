@@ -89,8 +89,14 @@ void task_run(struct TASK *new_task) {
 	list_pushback(&taskctl.list, &new_task->link);
 }
 
-void task_switch(uint64_t **rsp) {
-	//task_show();
+/*
+ * Called from task_switch
+ * rsp[0]: *current_rsp
+ * rsp[1]: *next_rsp
+ */
+uint64_t *rsp[2];
+uint64_t** schedule() {
+	memset(rsp, 0, 2*sizeof(uint64_t));
 	struct TASK *current_task = (struct TASK *) list_head(&taskctl.list);
 	struct TASK *next_task = (struct TASK *)list_next(&current_task->link);
 	if(next_task != NULL) {
@@ -99,6 +105,7 @@ void task_switch(uint64_t **rsp) {
 		rsp[0] = &current_task->rsp;
 		rsp[1] = &next_task->rsp;
 	}
+	return rsp;
 }
 
 void task_show()

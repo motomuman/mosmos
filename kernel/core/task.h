@@ -27,7 +27,7 @@ struct TASK *task_init();
 struct TASK *task_alloc(void (*func)());
 void task_run(struct TASK *new_task);
 void task_sleep();
-void task_switch(uint64_t **rsp);
+uint64_t** schedule();
 void task_show();
 
 #endif
