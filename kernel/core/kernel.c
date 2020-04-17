@@ -100,8 +100,8 @@ void kstart(void)
 	while(1){
 		io_cli();
 		if(wq_empty()) {
-		//	printstr_log("task sleep\n");
-		//	task_sleep();
+			printstr_log("task sleep\n");
+			task_sleep();
 			io_sti();
 		} else {
 			io_sti();

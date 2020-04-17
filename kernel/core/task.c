@@ -89,6 +89,17 @@ void task_run(struct TASK *new_task) {
 	list_pushback(&taskctl.list, &new_task->link);
 }
 
+void task_sleep()
+{
+       // can not sleep if no running task or only one task is running
+       struct TASK *current_task = (struct TASK *) list_head(&taskctl.list);
+       if(current_task == NULL || list_next(&current_task->link) == NULL) {
+               return;
+       }
+       current_task->flag = TASK_WAITING;
+       task_switch();
+}
+
 /*
  * Called from task_switch
  * rsp[0]: *current_rsp
@@ -101,13 +112,14 @@ uint64_t** schedule() {
 	struct TASK *next_task = (struct TASK *)list_next(&current_task->link);
 	if(next_task != NULL) {
 		list_popfront(&taskctl.list);
-		list_pushback(&taskctl.list, &current_task->link);
+		if (current_task->flag != TASK_WAITING) {
+			list_pushback(&taskctl.list, &current_task->link);
+		}
 		rsp[0] = &current_task->rsp;
 		rsp[1] = &next_task->rsp;
 	}
 	return rsp;
 }
-
 void task_show()
 {
 	printstr_log("task list\n");

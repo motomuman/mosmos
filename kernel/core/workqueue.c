@@ -35,9 +35,9 @@ void wq_push(void (*func) (void *), void *arg)
 	task->func = func;
 	task->arg = arg;
 	list_pushback(&wq.list, &task->link);
-	//if(wq.receiver_task != NULL) {
-	//	task_run(wq.receiver_task);
-	//}
+	if(wq.receiver_task != NULL) {
+		task_run(wq.receiver_task);
+	}
 	return;
 }
 
@@ -45,9 +45,9 @@ void wq_push_timer_func(void *_task)
 {
 	struct work_task *task = (struct work_task *) _task;
 	list_pushback(&wq.list, &task->link);
-	//if(wq.receiver_task != NULL) {
-	//	task_run(wq.receiver_task);
-	//}
+	if(wq.receiver_task != NULL) {
+		task_run(wq.receiver_task);
+	}
 	return;
 }
 
