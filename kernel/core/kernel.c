@@ -37,6 +37,7 @@ void int_keyboard(int *esp) {
 
 void task_b_main() {
 	int i;
+	int ttl = 1;
 
 	int sock = raw_socket(IP_HDR_PROTO_ICMP);
 
@@ -56,7 +57,7 @@ void task_b_main() {
 
 		uint32_t dip = (8 << 24) | (8 << 16) | (8 << 8) | 8;
 		printstr_app("task_b_send\n");
-		raw_socket_send(sock, dip, buf, sizeof(struct icmp_hdr));
+		raw_socket_send(sock, dip, buf, sizeof(struct icmp_hdr), ttl);
 
 		int ret = raw_socket_recv(sock, buf, sizeof(struct icmp_hdr) + sizeof(struct ip_hdr));
 		printstr_app("task_b_recv!!!!!\n");
@@ -64,6 +65,10 @@ void task_b_main() {
 			printstr_app("TIMEOUT!!!!\n");
 			continue;
 		}
+		printstr_app("TTL: ");
+		printnum_app(ttl);
+		printstr_app("\n");
+		ttl++;
 		struct ip_hdr *iphdr = (struct ip_hdr *)buf;
 		printstr_app("src: ");
 		printnum_app((ntoh32(iphdr->sip) >> 24) &0xff);
@@ -92,7 +97,9 @@ void task_b_main() {
 			printstr_app("ICMP_HDR_TYPE_ECHO_REPLY\n");
 		} else if(icmphdr->type == ICMP_HDR_TYPE_ECHO_REQUEST) {
 			printstr_app("ICMP_HDR_TYPE_ECHO_REQUEST\n");
-		} else {
+		} else if (icmphdr->type ==  ICMP_HDR_TYPE_TIME_EXCEEDED){
+			printstr_app("ICMP_HDR_TYPE_TIME_EXCEEDED\n");
+		}else{
 			printstr_app("ICMP_HDR_TYPE_ECHO_INVALID\n");
 		}
 		printstr_app("CODE: ");

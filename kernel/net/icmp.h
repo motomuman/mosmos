@@ -6,6 +6,7 @@
 
 #define ICMP_HDR_TYPE_ECHO_REPLY 0
 #define ICMP_HDR_TYPE_ECHO_REQUEST 8
+#define ICMP_HDR_TYPE_TIME_EXCEEDED 11
 
 struct icmp_hdr {
 	uint8_t type;

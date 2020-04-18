@@ -41,7 +41,7 @@ int raw_socket(uint8_t proto)
 	return socket_id;
 }
 
-void raw_socket_send(int socket_id, uint32_t dip, uint8_t *buf, uint32_t size)
+void raw_socket_send(int socket_id, uint32_t dip, uint8_t *buf, uint32_t size, uint8_t ttl)
 {
 	struct raw_socket *socket = &raw_sockets[socket_id];
 	printstr_app("raw send\n");
@@ -61,7 +61,7 @@ void raw_socket_send(int socket_id, uint32_t dip, uint8_t *buf, uint32_t size)
 
 	txpkt->buf -= sizeof(struct ip_hdr);
 
-	ip_tx(txpkt, dip, socket->proto);
+	ip_tx(txpkt, dip, socket->proto, ttl);
 
 	mem_free(txpkt->buf_head);
 	mem_free(txpkt);

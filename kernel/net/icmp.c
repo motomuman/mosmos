@@ -47,7 +47,7 @@ void icmp_rx(struct pktbuf *rxpkt, uint32_t sip)
 		txpkt->buf -= sizeof(struct ip_hdr);
 
 		// send icmp reply
-		ip_tx(txpkt, ntoh32(sip), IP_HDR_PROTO_ICMP);
+		ip_tx(txpkt, ntoh32(sip), IP_HDR_PROTO_ICMP, 64);
 
 		mem_free(txpkt->buf_head);
 		mem_free(txpkt);

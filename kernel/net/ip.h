@@ -24,6 +24,6 @@ struct ip_hdr {
 } __attribute__ ((packed));
 
 void ip_rx(struct pktbuf *pkt);
-void ip_tx(struct pktbuf *pkt, uint32_t dip, uint8_t proto);
+void ip_tx(struct pktbuf *pkt, uint32_t dip, uint8_t proto, uint8_t ttl);
 
 #endif

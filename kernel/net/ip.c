@@ -83,7 +83,7 @@ void ip_rx(struct pktbuf *pkt)
 	}
 }
 
-void ip_tx(struct pktbuf *pkt, uint32_t dip, uint8_t proto)
+void ip_tx(struct pktbuf *pkt, uint32_t dip, uint8_t proto, uint8_t ttl)
 {
 	struct ip_hdr *iphdr = (struct ip_hdr *)pkt->buf;
 	struct net_device *netdev = get_netdev();
@@ -93,7 +93,7 @@ void ip_tx(struct pktbuf *pkt, uint32_t dip, uint8_t proto)
 	iphdr->len = hton16(pkt->pkt_len - sizeof(struct ether_hdr));
 	iphdr->id = 0x77;
 	iphdr->flafra = 0;
-	iphdr->ttl = 64;
+	iphdr->ttl = ttl;
 	iphdr->proto = proto;
 	iphdr->cksum = 0;
 	iphdr->sip = hton32(netdev->ip_addr);
