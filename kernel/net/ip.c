@@ -64,6 +64,20 @@ void show_iphdr(struct ip_hdr *iphdr)
 void ip_rx(struct pktbuf *pkt)
 {
 	struct ip_hdr *iphdr = (struct ip_hdr *)pkt->buf;
+
+	if(get_netdev()->ip_addr != ntoh32(iphdr->dip)) {
+		printstr_app("ignore ip packt to:");
+		printnum_app((ntoh32(iphdr->dip) >> 24) & 0xff);
+		printstr_app(".");
+		printnum_app((ntoh32(iphdr->dip) >> 16) & 0xff);
+		printstr_app(".");
+		printnum_app((ntoh32(iphdr->dip) >> 8) & 0xff);
+		printstr_app(".");
+		printnum_app((ntoh32(iphdr->dip) >> 0) & 0xff);
+		printstr_app("\n");
+		return;
+	}
+
 	raw_recv(pkt, iphdr->proto);
 	pkt->buf += sizeof(struct ip_hdr);
 

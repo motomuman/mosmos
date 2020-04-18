@@ -116,18 +116,26 @@ void task_b_main() {
 	int sock = udp_socket(IP_HDR_PROTO_ICMP);
 	//uint32_t dip = (8 << 24) | (8 << 16) | (8 << 8) | 8;
 	uint32_t dip = (192 << 24) | (168 << 16) | (2 << 8) | 1;
-	uint8_t *buf = (uint8_t*) mem_alloc(5, "udpdata");
-	buf[0] = 'H';
-	buf[1] = 'i';
-	buf[2] = '!';
-	buf[3] = '!';
-	buf[4] = 0x0a;
+	uint8_t *buf = (uint8_t*) mem_alloc(10, "udpdata");
+	//buf[0] = 'H';
+	//buf[1] = 'i';
+	//buf[2] = '!';
+	//buf[3] = '!';
+	//buf[4] = 0x0a;
 
 	while(1) {
 		for(i = 0; i < 200000000; i++){
 		}
 		printstr_app("task_b_main: send pkt\n");
-		udp_socket_send(sock, dip, 888, buf, 5);
+		int ret = udp_socket_recv(sock, buf, 10);
+		if(ret == -1) {
+			printstr_app("udp_socket_recv: TIMEOUT\n");
+			continue;
+		}
+		printstr_app("task_b_main: recv pkt\n");
+		printstr_app("recv data: ");
+		printstr_app(buf);
+		printstr_app("\n");
 	}
 }
 
@@ -136,7 +144,7 @@ void task_c_main() {
 	while(1) {
 		for(i = 0; i < 200000000; i++){
 		}
-		printstr_app("task_c_main\n");
+		//printstr_app("task_c_main\n");
 	}
 }
 
@@ -178,8 +186,8 @@ void kstart(void)
 
 	io_sti();
 
-	set_timer(hello, NULL, 1000);
-	set_timer(hello2, NULL, 3000);
+	//set_timer(hello, NULL, 1000);
+	//set_timer(hello2, NULL, 3000);
 
 	struct TASK *task_a;
 	struct TASK *task_b;

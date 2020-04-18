@@ -8,6 +8,8 @@
 #include "ip.h"
 #include "netdev.h"
 
+#define NULL 0
+
 struct udp_socket_pkt {
 	struct list_item link;
 	struct pktbuf *pkt;
@@ -95,32 +97,69 @@ void udp_socket_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, 
 	mem_free(txpkt);
 }
 
-void udp_rx(struct pktbuf *rxpkt)
+void udp_socket_recv_timeout(void *_args)
 {
-	printstr_app("udp_rx\n");
+	int *args = (int*) _args;
+	printstr_app("udp_socket_recv_timeout!!!!\n");
+	int socket_id = args[0];
+	int wait_id = args[1];
+	struct udp_socket *socket = &udp_sockets[socket_id];
+	if(socket->wait_id == wait_id){
+		task_run(socket->receiver);
+	}
+	mem_free(args);
+}
 
-	struct udp_hdr *udphdr = (struct udp_hdr *)rxpkt->buf;
-	rxpkt->buf += sizeof(struct udp_hdr);
+int udp_socket_recv(int socket_id, uint8_t *buf, uint32_t size)
+{
+	struct udp_socket *socket = &udp_sockets[socket_id];
+	if(list_empty(&socket->pktlist)) {
+		printstr_log("udp recv task_sleep\n");
+		socket->wait_id++;
+		int * args = (int *) mem_alloc(2 * sizeof(int), "udp_timeout_arg");
+		args[0] = socket_id;
+		args[1] = socket->wait_id;
+		wq_push_with_delay(udp_socket_recv_timeout, args, 5000);
+		task_sleep();
+	}
+	if(list_empty(&socket->pktlist)) {
+		return -1;
+	}
 
-	printstr_app("udp sport: ");
-	printnum_app(ntoh16(udphdr->sport));
+	struct udp_socket_pkt *pkt = (struct udp_socket_pkt *)list_popfront(&socket->pktlist);
+	memcpy(buf, pkt->pkt->buf, min_uint32(size, pkt->pkt->pkt_len));
+	return 0;
+}
 
-	printstr_app(" dport: ");
+void udp_rx(struct pktbuf *pkt)
+{
+	struct udp_hdr *udphdr = (struct udp_hdr *)pkt->buf;
+	pkt->buf += sizeof(struct udp_hdr);
+	printstr_app("udp_rx dport:");
 	printnum_app(ntoh16(udphdr->dport));
-
-	printstr_app(" len: ");
-	printnum_app(ntoh16(udphdr->len));
-
-	printstr_app(" cksum: ");
-	printnum_app(ntoh16(udphdr->checksum));
 	printstr_app("\n");
 
-	uint32_t data_len = ntoh16(udphdr->len) - sizeof(struct udp_hdr);
-	uint8_t *buf = (uint8_t *) mem_alloc(data_len + 10, "udp_rx_buf");
-	memset(buf, 0, data_len + 10); 
-	memcpy(buf, rxpkt->buf, data_len);
-	printstr_app("data: ");
-	printstr_app((char*) buf);
-	printstr_app("\n");
-	mem_free(buf);
+	int i;
+	for(i = 0; i < next_udp_socket_id; i++){
+		printstr_app("waiting port:");
+		printnum_app(udp_sockets[i].port);
+		printstr_app("\n");
+		if(udp_sockets[i].port == ntoh16(udphdr->dport)) {
+			// copy pkt
+			struct pktbuf * copypkt = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf), "udp_copy_pbuf");
+			copypkt->pkt_len = pkt->pkt_len;
+
+			uint8_t *copybuf = (uint8_t *)mem_alloc(sizeof(uint8_t) * copypkt->pkt_len, "udp_copy_pbuf_buf");
+			copypkt->buf = copybuf;
+			copypkt->buf_head = copybuf;
+			memcpy(copypkt->buf, pkt->buf, pkt->pkt_len - sizeof(struct ether_hdr) - sizeof(struct ip_hdr) - sizeof(struct udp_hdr));
+
+			struct udp_socket_pkt * udp_socket_pkt = (struct udp_socket_pkt *) mem_alloc(sizeof(struct udp_socket_pkt), "udp_socket_pkt");
+			udp_socket_pkt->pkt = copypkt;
+			list_pushback(&udp_sockets[i].pktlist, &udp_socket_pkt->link);
+			if(udp_sockets[i].receiver != NULL) {
+				task_run(udp_sockets[i].receiver);
+			}
+		}
+	}
 }
