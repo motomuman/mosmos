@@ -6,6 +6,7 @@
 #include "netdev.h"
 #include "arp.h"
 #include "raw.h"
+#include "udp.h"
 
 #define NULL 0
 
@@ -76,6 +77,7 @@ void ip_rx(struct pktbuf *pkt)
 			break;
 		case IP_HDR_PROTO_UDP:
 			printstr_app("ip_rx: UDP\n");
+			udp_rx(pkt);
 			break;
 		default:
 			printstr_app("ip_rx: UNKNOWN proto\n");

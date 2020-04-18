@@ -138,7 +138,6 @@ uint64_t** schedule() {
 
 void task_show()
 {
-	printstr_log("task list\n");
 	struct TASK *task;
 	for(task = (struct TASK *) list_head(&taskctl.list); task != NULL; task = (struct TASK *)list_next(&task->link)) {
 		printnum_log(task->task_id);

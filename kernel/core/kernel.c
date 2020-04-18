@@ -35,7 +35,7 @@ void int_keyboard(int *esp) {
 	return;
 }
 
-void task_b_main() {
+void task_ping_main() {
 	int i;
 	int ttl = 1;
 
@@ -110,6 +110,15 @@ void task_b_main() {
 	}
 }
 
+void task_b_main() {
+	int i;
+	while(1) {
+		for(i = 0; i < 200000000; i++){
+		}
+		printstr_app("task_b_main\n");
+	}
+}
+
 void task_c_main() {
 	int i;
 	while(1) {
@@ -146,7 +155,8 @@ void kstart(void)
 
 	init_arptable();
 	init_r8169();
-	uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 16;
+	//uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 16;
+	uint32_t ip_addr = (192 << 24) | (168 << 16) | (2 << 8) | 2;
 	netdev_set_ip_addr(ip_addr);
 
 	uint32_t gw_addr = (192 << 24) | (168 << 16) | (1 << 8) | 1;
