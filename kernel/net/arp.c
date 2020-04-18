@@ -100,6 +100,11 @@ void handle_arp_request(struct arp_etherip *arp)
 	}
 }
 
+void handle_arp_response(struct arp_etherip *arp)
+{
+	register_arpentry(arp->smac, ntoh32(arp->sip));
+}
+
 void arp_rx(struct pktbuf *pkt)
 {
 	printstr_app("arp_rx: ");
@@ -119,10 +124,52 @@ void arp_rx(struct pktbuf *pkt)
 			handle_arp_request(arp);
 			break;
 		case ARP_OP_RESPONSE:
-			//handle_arp_response(arp);
+			handle_arp_response(arp);
 			break;
 		default:
 			printstr_app("unknown arp opcode\n");
 			break;
 	}
+}
+
+void arp_tx(uint32_t dip)
+{
+	struct net_device *netdev = get_netdev();
+
+	struct pktbuf * pkt = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf), "arp_req_pbuf");
+	pkt->pkt_len = sizeof(struct ether_hdr) + sizeof(struct arp_hdr) + sizeof(struct arp_etherip);
+
+	uint8_t *buf = (uint8_t *)mem_alloc(sizeof(uint8_t) * pkt->pkt_len, "arp_req_pbuf_buf");
+	pkt->buf = buf;
+	pkt->buf_head = buf;
+
+	// reserve for ether header
+	pkt->buf += sizeof(struct ether_hdr);
+
+	// set arp header
+	struct arp_hdr *arphdr = (struct arp_hdr *) pkt->buf;
+	arphdr->hard_type = hton16(ARP_HARD_TYPE_ETHER);
+	arphdr->proto = hton16(ARP_PROTO_TCPIP);
+	arphdr->hlen = ARP_HLEN_ETHER;
+	arphdr->plen = ARP_PLEN_ETHER;
+	arphdr->opcode = hton16(ARP_OP_REQUEST);
+
+	pkt->buf += sizeof(struct arp_hdr);
+
+	// set arp contents
+	struct arp_etherip *arpreq = (struct arp_etherip *) pkt->buf;
+	memset(arpreq->dmac, 0xff, ETHER_ADDR_LEN);
+	arpreq->dip = hton32(dip);
+	memcpy(arpreq->smac, netdev->hw_addr, ETHER_ADDR_LEN);
+	arpreq->sip = hton32(netdev->ip_addr);
+
+	// restore buf position
+	pkt->buf -= sizeof(struct arp_hdr);
+	pkt->buf -= sizeof(struct ether_hdr);
+
+	// send arp request
+	ether_tx(pkt, arpreq->dmac, ETHER_TYPE_ARP);
+
+	mem_free(pkt->buf_head);
+	mem_free(pkt);
 }

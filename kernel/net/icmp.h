@@ -11,11 +11,10 @@ struct icmp_hdr {
 	uint8_t type;
 	uint8_t code;
 	uint16_t checksum;
-};
-
-struct icmp_echo {
-	uint16_t id;
-	uint16_t seqnum;
+	struct {
+		uint16_t id;
+		uint16_t seqnum;
+	} echo;
 };
 
 void icmp_rx(struct pktbuf *pkt, uint32_t sip);

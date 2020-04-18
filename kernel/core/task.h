@@ -29,5 +29,6 @@ void task_run(struct TASK *new_task);
 void task_sleep();
 uint64_t** schedule();
 void task_show();
+struct TASK *current_task();
 
 #endif

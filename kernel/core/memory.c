@@ -53,6 +53,17 @@ void mem_init() {
 	return;
 }
 
+void show_alloced_mem() {
+	int i;
+	for(i = 0; i < 10; i++) {
+		struct memhdr *hdr = (struct memhdr *) freemem.addr[i];
+		if(hdr->mem_flag == MEM_USED_FLAG) {
+			printstr_log(hdr->name);
+			printstr_log("\n");
+		}
+	}
+}
+
 void mem_free(void *_addr) {
 	uint64_t addr = (uint64_t) _addr;
 	if(freemem.len >= MEM_TABLE_SIZE - 1) {
@@ -69,14 +80,14 @@ void mem_free(void *_addr) {
 	}
 	entry->mem_flag = MEM_FREE_FLAG;
 
-	printstr_log("Mem Free ");
-	printstr_log(entry->name);
-	printstr_log(" ");
-	printhex_log(addr);
-	printstr_log(" (");
-	printnum_log(freemem.len);
-	printstr_log(")");
-	printstr_log("\n");
+	//printstr_log("Mem Free ");
+	//printstr_log(entry->name);
+	//printstr_log(" ");
+	//printhex_log(addr);
+	//printstr_log(" (");
+	//printnum_log(freemem.len);
+	//printstr_log(")");
+	//printstr_log("\n");
 
 	freemem.addr[freemem.len] = addr - sizeof(struct memhdr);
 	freemem.len++;
@@ -96,6 +107,7 @@ uint64_t mem_alloc(uint32_t size, char *name) {
 		printstr_log("ERROR: Don't have enough memory to allocate ");
 		printstr_log(name);
 		printstr_log("\n");
+		show_alloced_mem();
 		panic();
 		return 0;
 	}
@@ -104,14 +116,14 @@ uint64_t mem_alloc(uint32_t size, char *name) {
 	uint64_t addr = freemem.addr[freemem.len];
 	struct memhdr *entry = (struct memhdr *)(addr);
 
-	printstr_log("Mem Alloc ");
-	printstr_log(name);
-	printstr_log(" ");
-	printhex_log(addr);
-	printstr_log(" (");
-	printnum_log(freemem.len);
-	printstr_log(")");
-	printstr_log("\n");
+	//printstr_log("Mem Alloc ");
+	//printstr_log(name);
+	//printstr_log(" ");
+	//printhex_log(addr);
+	//printstr_log(" (");
+	//printnum_log(freemem.len);
+	//printstr_log(")");
+	//printstr_log("\n");
 
 	if(entry->mem_flag != MEM_FREE_FLAG) {
 		printstr_log("ERROR: Tried to allocate invalid address\n");

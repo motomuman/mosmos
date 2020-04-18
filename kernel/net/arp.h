@@ -31,5 +31,6 @@ struct arp_etherip {
 void arp_rx(struct pktbuf *pkt);
 void init_arptable();
 uint8_t* find_mac_addr(uint32_t ip);
+void arp_tx(uint32_t dip);
 
 #endif

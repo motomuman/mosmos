@@ -38,3 +38,13 @@ void panic()
 		io_hlt();
 	}
 }
+
+uint32_t max_uint32(uint32_t num1, uint32_t num2)
+{
+	return (num1 > num2) ? num1 : num2;
+}
+
+uint32_t min_uint32(uint32_t num1, uint32_t num2)
+{
+	return (num1 > num2) ? num2 : num1;
+}

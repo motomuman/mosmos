@@ -5,6 +5,7 @@
 #include "icmp.h"
 #include "netdev.h"
 #include "arp.h"
+#include "raw.h"
 
 #define NULL 0
 
@@ -62,9 +63,8 @@ void show_iphdr(struct ip_hdr *iphdr)
 void ip_rx(struct pktbuf *pkt)
 {
 	struct ip_hdr *iphdr = (struct ip_hdr *)pkt->buf;
+	raw_recv(pkt, iphdr->proto);
 	pkt->buf += sizeof(struct ip_hdr);
-
-	show_iphdr(iphdr);
 
 	switch(iphdr->proto) {
 		case IP_HDR_PROTO_ICMP:
@@ -103,7 +103,8 @@ void ip_tx(struct pktbuf *pkt, uint32_t dip, uint8_t proto)
 
 	uint8_t *mac_addr = find_mac_addr(dip);
 	if(mac_addr == NULL) {
-		printstr_app("ip_tx: don't know mac addr ignore\n");
+		printstr_app("ip_tx: don't know mac addr, send arp\n");
+		arp_tx(dip);
 	} else {
 		printstr_app("ip_tx: I know mac addr send!\n");
 		pkt->buf -= sizeof(struct ether_hdr);

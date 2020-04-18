@@ -204,6 +204,16 @@ _task_switch:
 	push	r14
 	push	r15
 
+	call 	_schedule 	; _schedule returns uint64_t rsp[2];
+				; rsp[0] is pointer to current task rsp
+				; rsp[1] is pointer to next task rsp
+
+	mov	rdi, [rax]	; rdi = rsp[0] (*current_rsp)
+	mov	rsi, [rax + 8]	; rsi = rsp[1] (*next_rsp)
+
+	cmp	rdi, 0
+	jz	.return_to_task_switch_caller
+
 	; save stack frames
 	mov	rdx,rsp
 	mov	rax, 16
@@ -233,13 +243,6 @@ _task_switch:
 	push	fs
 	push	gs
 
-
-	call 	_schedule 	; _schedule returns uint64_t rsp[2];
-				; rsp[0] is pointer to current task rsp
-				; rsp[1] is pointer to next task rsp
-
-	mov	rdi, [rax]	; rdi = rsp[0] (*current_rsp)
-	mov	rsi, [rax + 8]	; rsi = rsp[1] (*next_rsp)
 	mov	rax, [rsi]	; rax = next_rsp
 	mov	[rdi], rsp	; save current rsp
 	mov	rsp, rax	; set next rsp

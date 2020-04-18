@@ -12,6 +12,9 @@
 #include "netdev.h"
 #include "arp.h"
 #include "icmp.h"
+#include "ip.h"
+#include "raw.h"
+#include "netutil.h"
 
 #define NULL 0
 
@@ -34,10 +37,69 @@ void int_keyboard(int *esp) {
 
 void task_b_main() {
 	int i;
+
+	int sock = raw_socket(IP_HDR_PROTO_ICMP);
+
+	uint8_t *buf = (uint8_t*) mem_alloc(sizeof(struct icmp_hdr) + sizeof(struct ip_hdr), "icmphdr");
 	while(1) {
-		for(i = 0; i < 200000000; i++){
+		for(i = 0; i < 100000000; i++){
 		}
-		printstr_app("task_b_main\n");
+		struct icmp_hdr *icmphdr = (struct icmp_hdr *) buf;
+		icmphdr->type = ICMP_HDR_TYPE_ECHO_REQUEST;
+		icmphdr->code = 0;
+		icmphdr->checksum = 0;
+		icmphdr->echo.id = 7777;
+		icmphdr->echo.seqnum = 0;
+
+		//set checksum
+		icmphdr->checksum = checksum(buf, sizeof(struct icmp_hdr));
+
+		uint32_t dip = (192 << 24) | (168 << 16) | (2 << 8) | 1;
+		printstr_app("task_b_send\n");
+		raw_socket_send(sock, dip, buf, sizeof(struct icmp_hdr));
+
+		int ret = raw_socket_recv(sock, buf, sizeof(struct icmp_hdr) + sizeof(struct ip_hdr));
+		printstr_app("task_b_recv!!!!!\n");
+		if(ret == -1) {
+			printstr_app("TIMEOUT!!!!\n");
+			continue;
+		}
+		struct ip_hdr *iphdr = (struct ip_hdr *)buf;
+		printstr_app("src: ");
+		printnum_app((ntoh32(iphdr->sip) >> 24) &0xff);
+		printstr_app(".");
+		printnum_app((ntoh32(iphdr->sip) >> 16) &0xff);
+		printstr_app(".");
+		printnum_app((ntoh32(iphdr->sip) >> 8) &0xff);
+		printstr_app(".");
+		printnum_app((ntoh32(iphdr->sip)) &0xff);
+		printstr_app("\n");
+
+		printstr_app("dst: ");
+		printnum_app((ntoh32(iphdr->dip) >> 24) &0xff);
+		printstr_app(".");
+		printnum_app((ntoh32(iphdr->dip) >> 16) &0xff);
+		printstr_app(".");
+		printnum_app((ntoh32(iphdr->dip) >> 8) &0xff);
+		printstr_app(".");
+		printnum_app(ntoh32(iphdr->dip) &0xff);
+		printstr_app("\n");
+
+
+		buf += sizeof(struct ip_hdr);
+		icmphdr = (struct icmp_hdr *)buf;
+		if(icmphdr->type == ICMP_HDR_TYPE_ECHO_REPLY) {
+			printstr_app("ICMP_HDR_TYPE_ECHO_REPLY\n");
+		} else if(icmphdr->type == ICMP_HDR_TYPE_ECHO_REQUEST) {
+			printstr_app("ICMP_HDR_TYPE_ECHO_REQUEST\n");
+		} else {
+			printstr_app("ICMP_HDR_TYPE_ECHO_INVALID\n");
+		}
+		printstr_app("CODE: ");
+		printnum_app(icmphdr->code);
+		printstr_app("\n");
+
+		buf -= sizeof(struct ip_hdr);
 	}
 }
 
@@ -75,10 +137,10 @@ void kstart(void)
 	init_timer();
 	wq_init();
 
-	//init_arptable();
-	//init_r8169();
-	//uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 2;
-	//netdev_set_ip_addr(ip_addr);
+	init_arptable();
+	init_r8169();
+	uint32_t ip_addr = (192 << 24) | (168 << 16) | (2 << 8) | 2;
+	netdev_set_ip_addr(ip_addr);
 
 	io_sti();
 
@@ -100,7 +162,6 @@ void kstart(void)
 	while(1){
 		io_cli();
 		if(wq_empty()) {
-			printstr_log("task sleep\n");
 			task_sleep();
 			io_sti();
 		} else {
