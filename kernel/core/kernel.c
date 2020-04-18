@@ -15,6 +15,7 @@
 #include "ip.h"
 #include "raw.h"
 #include "netutil.h"
+#include "udp.h"
 
 #define NULL 0
 
@@ -112,10 +113,21 @@ void task_ping_main() {
 
 void task_b_main() {
 	int i;
+	int sock = udp_socket(IP_HDR_PROTO_ICMP);
+	//uint32_t dip = (8 << 24) | (8 << 16) | (8 << 8) | 8;
+	uint32_t dip = (192 << 24) | (168 << 16) | (2 << 8) | 1;
+	uint8_t *buf = (uint8_t*) mem_alloc(5, "udpdata");
+	buf[0] = 'H';
+	buf[1] = 'i';
+	buf[2] = '!';
+	buf[3] = '!';
+	buf[4] = 0x0a;
+
 	while(1) {
 		for(i = 0; i < 200000000; i++){
 		}
-		printstr_app("task_b_main\n");
+		printstr_app("task_b_main: send pkt\n");
+		udp_socket_send(sock, dip, 888, buf, 5);
 	}
 }
 
@@ -159,7 +171,7 @@ void kstart(void)
 	uint32_t ip_addr = (192 << 24) | (168 << 16) | (2 << 8) | 2;
 	netdev_set_ip_addr(ip_addr);
 
-	uint32_t gw_addr = (192 << 24) | (168 << 16) | (1 << 8) | 1;
+	uint32_t gw_addr = (192 << 24) | (168 << 16) | (2 << 8) | 1;
 	netdev_set_gw_addr(gw_addr);
 
 	netdev_set_netmask(24);

@@ -22,7 +22,7 @@ struct raw_socket {
 
 #define RAW_SOCKET_COUNT 10
 
-int next_raw_socket_id;
+int next_raw_socket_id = 0;
 struct raw_socket raw_sockets[RAW_SOCKET_COUNT];
 
 int raw_socket(uint8_t proto)
