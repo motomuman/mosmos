@@ -86,7 +86,7 @@ void ip_rx(struct pktbuf *pkt)
 void ip_tx(struct pktbuf *pkt, uint32_t dip, uint8_t proto)
 {
 	struct ip_hdr *iphdr = (struct ip_hdr *)pkt->buf;
-
+	struct net_device *netdev = get_netdev();
 
 	iphdr->ver_ihl = (IP_HDR_PROTO_IPV4_VER << 4) | ((sizeof(struct ip_hdr)/4) & 0xf);
 	iphdr->tos = 0;
@@ -96,15 +96,22 @@ void ip_tx(struct pktbuf *pkt, uint32_t dip, uint8_t proto)
 	iphdr->ttl = 64;
 	iphdr->proto = proto;
 	iphdr->cksum = 0;
-	iphdr->sip = hton32(get_netdev()->ip_addr);
+	iphdr->sip = hton32(netdev->ip_addr);
 	iphdr->dip = hton32(dip);
 
 	iphdr->cksum = checksum((uint16_t *)iphdr, sizeof(struct ip_hdr));
 
-	uint8_t *mac_addr = find_mac_addr(dip);
+	uint32_t nexthop_ip;
+	if((dip >> (32 - netdev->netmask)) == (netdev->ip_addr >> (32 - netdev->netmask))) {
+		nexthop_ip = dip;
+	} else {
+		nexthop_ip = netdev->gw_addr;
+	}
+
+	uint8_t *mac_addr = find_mac_addr(nexthop_ip);
 	if(mac_addr == NULL) {
 		printstr_app("ip_tx: don't know mac addr, send arp\n");
-		arp_tx(dip);
+		arp_tx(nexthop_ip);
 	} else {
 		printstr_app("ip_tx: I know mac addr send!\n");
 		pkt->buf -= sizeof(struct ether_hdr);

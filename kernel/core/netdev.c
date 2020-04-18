@@ -10,6 +10,16 @@ void netdev_set_ip_addr(uint32_t ip_addr)
 	netdev.ip_addr = ip_addr;
 }
 
+void netdev_set_gw_addr(uint32_t gw_addr)
+{
+	netdev.gw_addr = gw_addr;
+}
+
+void netdev_set_netmask(int netmask)
+{
+	netdev.netmask = netmask;
+}
+
 void netdev_set_tx_handler(void (tx) (struct pktbuf *pkt))
 {
 	netdev.tx = tx;
