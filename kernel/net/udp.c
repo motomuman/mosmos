@@ -7,6 +7,8 @@
 #include "ether.h"
 #include "ip.h"
 #include "netdev.h"
+#include "task.h"
+#include "workqueue.h"
 
 #define NULL 0
 
@@ -27,6 +29,11 @@ struct udp_socket {
 int next_udp_socket_id = 0;
 uint16_t next_udp_socket_port = 5000;
 struct udp_socket udp_sockets[UDP_SOCKET_COUNT];
+
+void udp_init()
+{
+	next_udp_socket_port = 5000;
+}
 
 int udp_socket()
 {

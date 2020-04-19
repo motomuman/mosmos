@@ -30,6 +30,15 @@ void strncpy(char *dst, char *src, uint32_t size)
 	}
 }
 
+uint32_t strlen(char *str)
+{
+	uint32_t len = 0;
+	while(str[len] != 0) {
+		len++;
+	}
+	return len;
+}
+
 void panic()
 {
 	printstr_log("PANIC");

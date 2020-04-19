@@ -30,6 +30,7 @@ OBJS_KERNEL += lib/nasmfunc.o
 OBJS_KERNEL += lib/list.o
 OBJS_KERNEL += lib/lib.o
 OBJS_KERNEL += lib/print.o
+OBJS_KERNEL += lib/dns.o
 OBJS_KERNEL += dev/r8169.o
 
 kernel: $(OBJS_KERNEL)

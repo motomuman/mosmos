@@ -134,7 +134,7 @@ void printstr_log(char *str) {
 	printstr(&logscreen, str);
 }
 
-void printnum(struct SCREEN *screen, int num) {
+void printnum(struct SCREEN *screen, uint32_t num) {
 	if(num == 0) {
 		putchar(screen, '0');
 		return;

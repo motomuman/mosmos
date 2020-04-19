@@ -16,6 +16,8 @@
 #include "raw.h"
 #include "netutil.h"
 #include "udp.h"
+#include "dns.h"
+#include "lib.h"
 
 #define NULL 0
 
@@ -114,28 +116,32 @@ void task_ping_main() {
 void task_b_main() {
 	int i;
 	int sock = udp_socket(IP_HDR_PROTO_ICMP);
-	//uint32_t dip = (8 << 24) | (8 << 16) | (8 << 8) | 8;
-	uint32_t dip = (192 << 24) | (168 << 16) | (2 << 8) | 1;
-	uint8_t *buf = (uint8_t*) mem_alloc(10, "udpdata");
-	//buf[0] = 'H';
-	//buf[1] = 'i';
-	//buf[2] = '!';
-	//buf[3] = '!';
-	//buf[4] = 0x0a;
+	char buf[200];
 
 	while(1) {
 		for(i = 0; i < 200000000; i++){
 		}
-		printstr_app("task_b_main: send pkt\n");
-		int ret = udp_socket_recv(sock, buf, 10);
-		if(ret == -1) {
-			printstr_app("udp_socket_recv: TIMEOUT\n");
-			continue;
+
+		uint32_t ip = resolve_addr(sock, "www.hongo.wide.ad.jp");
+		if(ip != 0) {
+			printstr_app("task_b: resolved ip ");
+			printnum_app((ip>>24)&0xff);
+			printstr_app(".");
+			printnum_app((ip>>16)&0xff);
+			printstr_app(".");
+			printnum_app((ip>>8)&0xff);
+			printstr_app(".");
+			printnum_app((ip>>0)&0xff);
+			printstr_app("\n");
 		}
-		printstr_app("task_b_main: recv pkt\n");
-		printstr_app("recv data: ");
-		printstr_app(buf);
-		printstr_app("\n");
+
+		memset(buf, 0, 100);
+		int ret = resolve_host(sock, ((203 << 24) + (178 << 16) + (135 << 8) + 39), buf, 200);
+		if(ret != -1){
+			printstr_app("task_b: resolved host ");
+			printstr_app(buf);
+			printstr_app("\n");
+		}
 	}
 }
 
@@ -173,13 +179,15 @@ void kstart(void)
 	init_timer();
 	wq_init();
 
+	udp_init();
 	init_arptable();
 	init_r8169();
-	//uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 16;
-	uint32_t ip_addr = (192 << 24) | (168 << 16) | (2 << 8) | 2;
+	uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 16;
+	//uint32_t ip_addr = (192 << 24) | (168 << 16) | (2 << 8) | 2;
 	netdev_set_ip_addr(ip_addr);
 
-	uint32_t gw_addr = (192 << 24) | (168 << 16) | (2 << 8) | 1;
+	uint32_t gw_addr = (192 << 24) | (168 << 16) | (1 << 8) | 1;
+	//uint32_t gw_addr = (192 << 24) | (168 << 16) | (2 << 8) | 1;
 	netdev_set_gw_addr(gw_addr);
 
 	netdev_set_netmask(24);
