@@ -14,19 +14,19 @@ void ether_rx(void *_pkt)
 
 	switch(ntoh16(ehdr->type)) {
 		case ETHER_TYPE_ARP:
-			printstr_app("ether_rx: ARP\n");
+			printstr_log("ether_rx: ARP\n");
 			pkt->buf += sizeof(struct ether_hdr);
 			arp_rx(pkt);
 			break;
 		case ETHER_TYPE_IPV4:
-			printstr_app("ether_rx: IPV4\n");
+			printstr_log("ether_rx: IPV4\n");
 			pkt->buf += sizeof(struct ether_hdr);
 			ip_rx(pkt);
 			break;
 		default:
-			printstr_app("unknown ether type: ");
-			printhex_app(ntoh16(ehdr->type));
-			printstr_app("\n");
+			printstr_log("unknown ether type: ");
+			printhex_log(ntoh16(ehdr->type));
+			printstr_log("\n");
 			break;
 	}
 }

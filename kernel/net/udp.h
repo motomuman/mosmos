@@ -19,10 +19,11 @@ struct udp_dummy_ip_hdr {
 	uint16_t len;
 } __attribute__ ((packed));
 
-void udp_rx(struct pktbuf *pkt);
+void udp_socket_init();
 int udp_socket();
+void udp_socket_free(int socket_id);
+void udp_rx(struct pktbuf *pkt);
 void udp_socket_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_t size);
-int udp_socket_recv(int socket_id, uint8_t *buf, uint32_t size);
-void udp_init();
+int udp_socket_recv(int socket_id, uint8_t *buf, int size);
 
 #endif

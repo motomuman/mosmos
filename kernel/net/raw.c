@@ -8,8 +8,8 @@
 #include "task.h"
 #include "workqueue.h"
 
-#define FLAG_FREE	0
-#define FLAG_USED	1
+#define RAW_SOCKET_FREE	0
+#define RAW_SOCKET_USED	1
 
 struct raw_rx_data {
 	struct list_item link;
@@ -34,7 +34,7 @@ void raw_socket_init()
 	int i;
 	for(i = 0; i < RAW_SOCKET_COUNT; i++) {
 		list_init(&raw_sockets[i].rx_data_list);
-		raw_sockets[i].flag = FLAG_FREE;
+		raw_sockets[i].flag = RAW_SOCKET_FREE;
 	}
 }
 
@@ -42,11 +42,11 @@ int raw_socket(uint8_t proto)
 {
 	int i;
 	for(i = 0; i < RAW_SOCKET_COUNT; i++) {
-		if(raw_sockets[i].flag == FLAG_FREE) {
+		if(raw_sockets[i].flag == RAW_SOCKET_FREE) {
 			raw_sockets[i].wait_id = 0;
 			raw_sockets[i].proto = proto;
 			raw_sockets[i].receiver = current_task();
-			raw_sockets[i].flag = FLAG_USED;
+			raw_sockets[i].flag = RAW_SOCKET_USED;
 			return i;
 		}
 	}
@@ -61,11 +61,11 @@ void raw_socket_free(int socket_id)
 		printstr_log("ERROR: invalid socket_id\n");
 		panic();
 	}
-	if(raw_sockets[socket_id].flag != FLAG_USED) {
+	if(raw_sockets[socket_id].flag != RAW_SOCKET_USED) {
 		printstr_log("ERROR: Tried to free unused raw socket\n");
 		panic();
 	}
-	raw_sockets[socket_id].flag = FLAG_FREE;
+	raw_sockets[socket_id].flag = RAW_SOCKET_FREE;
 
 	while(!list_empty(&raw_sockets[socket_id].rx_data_list)) {
 		struct raw_rx_data *rx_data = (struct raw_rx_data *)list_popfront(&raw_sockets[socket_id].rx_data_list);
@@ -109,7 +109,7 @@ void raw_socket_recv_timeout(void *_args)
 	int socket_id = args[0];
 	int wait_id = args[1];
 	struct raw_socket *socket = &raw_sockets[socket_id];
-	if(socket->flag == FLAG_USED
+	if(socket->flag == RAW_SOCKET_USED
 			&& socket->wait_id == wait_id
 			&& socket->receiver != NULL){
 		task_run(socket->receiver);
@@ -150,7 +150,7 @@ void raw_recv(struct pktbuf *pkt, uint8_t proto)
 {
 	int i;
 	for(i = 0; i < RAW_SOCKET_COUNT; i++){
-		if(raw_sockets[i].flag == FLAG_USED && raw_sockets[i].proto == proto) {
+		if(raw_sockets[i].flag == RAW_SOCKET_USED && raw_sockets[i].proto == proto) {
 			// copy pkt data
 			struct raw_rx_data *rx_data = (struct raw_rx_data *) mem_alloc(sizeof(struct raw_rx_data), "rx_data");
 			uint8_t *data = (uint8_t *) mem_alloc(pkt->pkt_len, "rx_data_data");

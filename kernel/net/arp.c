@@ -88,15 +88,15 @@ void handle_arp_request(struct arp_etherip *arp)
 		mem_free(pkt->buf_head);
 		mem_free(pkt);
 	} else {
-		printstr_app("ignore arp to: ");
-		printnum_app((ntoh32(arp->dip) >> 24) & 0xff);
-		printstr_app(".");
-		printnum_app((ntoh32(arp->dip) >> 16) & 0xff);
-		printstr_app(".");
-		printnum_app((ntoh32(arp->dip) >> 8) & 0xff);
-		printstr_app(".");
-		printnum_app((ntoh32(arp->dip) >> 0) & 0xff);
-		printstr_app("\n");
+		printstr_log("ignore arp to: ");
+		printnum_log((ntoh32(arp->dip) >> 24) & 0xff);
+		printstr_log(".");
+		printnum_log((ntoh32(arp->dip) >> 16) & 0xff);
+		printstr_log(".");
+		printnum_log((ntoh32(arp->dip) >> 8) & 0xff);
+		printstr_log(".");
+		printnum_log((ntoh32(arp->dip) >> 0) & 0xff);
+		printstr_log("\n");
 	}
 }
 
@@ -107,7 +107,7 @@ void handle_arp_response(struct arp_etherip *arp)
 
 void arp_rx(struct pktbuf *pkt)
 {
-	printstr_app("arp_rx: ");
+	printstr_log("arp_rx: ");
 	struct arp_hdr *arphdr = (struct arp_hdr *)pkt->buf;
 	pkt->buf += sizeof(struct arp_hdr);
 	struct arp_etherip *arp = (struct arp_etherip *)pkt->buf;
@@ -115,7 +115,7 @@ void arp_rx(struct pktbuf *pkt)
 		ntoh16(arphdr->proto)  != ARP_PROTO_TCPIP ||
 		arphdr->hlen != ARP_HLEN_ETHER ||
 		arphdr->plen != ARP_PLEN_ETHER) {
-		printstr_app("invalid arp packet\n");
+		printstr_log("invalid arp packet\n");
 		return;
 	}
 
@@ -127,7 +127,7 @@ void arp_rx(struct pktbuf *pkt)
 			handle_arp_response(arp);
 			break;
 		default:
-			printstr_app("unknown arp opcode\n");
+			printstr_log("unknown arp opcode\n");
 			break;
 	}
 }

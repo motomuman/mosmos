@@ -131,10 +131,10 @@ void ip_tx(struct pktbuf *pkt, uint32_t dip, uint8_t proto, uint8_t ttl)
 
 	uint8_t *mac_addr = find_mac_addr(nexthop_ip);
 	if(mac_addr == NULL) {
-		printstr_app("ip_tx: don't know mac addr, send arp\n");
+		printstr_log("ip_tx: don't know mac addr, send arp\n");
 		arp_tx(nexthop_ip);
 	} else {
-		printstr_app("ip_tx: I know mac addr send!\n");
+		printstr_log("ip_tx: I know mac addr send!\n");
 		pkt->buf -= sizeof(struct ether_hdr);
 		ether_tx(pkt, mac_addr, ETHER_TYPE_IPV4);
 	}

@@ -128,7 +128,7 @@ void receive_packet() {
 		struct Descriptor *rx_desc = r8169_device.rx_ring + r8169_device.cur_rx;
 
 		if( rx_desc->opts1 & DescOwn ) {
-			//printstr_app("RX processing finished\n");
+			//printstr_log("RX processing finished\n");
 			break;
 		}
 
@@ -162,15 +162,15 @@ void receive_packet() {
 void r8169_int_handler() {
 	uint16_t status = io_in16(r8169_device.ioaddr + IntrStatus);
 
-	if(status & PCIErr) printstr_app("PCIErr\n");
-	if(status & PCSTimeout) printstr_app("PCSTimeout\n");
-	if(status & RxFIFOOver) printstr_app("RxFIFOOver\n");
-	if(status & RxUnderrun) printstr_app("RxUnderrun LinkChange\n");
-	if(status & RxOverflow) printstr_app("RxOverflow\n");
-	if(status & TxErr) printstr_app("TxErr\n");
-	if(status & RxErr) printstr_app("RxErr\n");
-	if(status & TxOK) printstr_app("Packet tx interrupt\n");
-	if(status & RxOK) printstr_app("Packet rx interrupt\n");
+	if(status & PCIErr) printstr_log("PCIErr\n");
+	if(status & PCSTimeout) printstr_log("PCSTimeout\n");
+	if(status & RxFIFOOver) printstr_log("RxFIFOOver\n");
+	if(status & RxUnderrun) printstr_log("RxUnderrun LinkChange\n");
+	if(status & RxOverflow) printstr_log("RxOverflow\n");
+	if(status & TxErr) printstr_log("TxErr\n");
+	if(status & RxErr) printstr_log("RxErr\n");
+	if(status & TxOK) printstr_log("Packet tx interrupt\n");
+	if(status & RxOK) printstr_log("Packet rx interrupt\n");
 
 	if(status & RxOK) {
 		receive_packet();
@@ -181,13 +181,13 @@ void r8169_int_handler() {
 }
 
 void r8169_tx(struct pktbuf *pkt) {
-	printstr_app("r8169_tx");
-	printnum_app(pkt->pkt_len);
-	printstr_app("\n");
+	printstr_log("r8169_tx (");
+	printnum_log(pkt->pkt_len);
+	printstr_log(")\n");
 
 	struct Descriptor *tx_desc = r8169_device.tx_ring + r8169_device.cur_tx;
 	if( tx_desc->opts1 & DescOwn ) {
-		printstr_app("TX processing failed\n");
+		printstr_log("TX processing failed\n");
 		return;
 	}
 

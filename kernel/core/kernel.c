@@ -42,6 +42,7 @@ void task_ping_main() {
 	int i;
 	int ttl = 1;
 
+	int udp_sock = udp_socket();
 
 	uint8_t *buf = (uint8_t*) mem_alloc(sizeof(struct icmp_hdr) + sizeof(struct ip_hdr), "icmphdr");
 	while(1) {
@@ -60,11 +61,9 @@ void task_ping_main() {
 		icmphdr->checksum = checksum(buf, sizeof(struct icmp_hdr));
 
 		uint32_t dip = (8 << 24) | (8 << 16) | (8 << 8) | 8;
-		printstr_app("task_b_send\n");
 		raw_socket_send(sock, dip, buf, sizeof(struct icmp_hdr), ttl);
 
 		int ret = raw_socket_recv(sock, buf, sizeof(struct icmp_hdr) + sizeof(struct ip_hdr));
-		printstr_app("task_b_recv!!!!!\n");
 		if(ret == -1) {
 			printstr_app("TIMEOUT!!!!\n");
 			continue;
@@ -82,17 +81,26 @@ void task_ping_main() {
 		printnum_app((ntoh32(iphdr->sip) >> 8) &0xff);
 		printstr_app(".");
 		printnum_app((ntoh32(iphdr->sip)) &0xff);
-		printstr_app("\n");
 
-		printstr_app("dst: ");
-		printnum_app((ntoh32(iphdr->dip) >> 24) &0xff);
-		printstr_app(".");
-		printnum_app((ntoh32(iphdr->dip) >> 16) &0xff);
-		printstr_app(".");
-		printnum_app((ntoh32(iphdr->dip) >> 8) &0xff);
-		printstr_app(".");
-		printnum_app(ntoh32(iphdr->dip) &0xff);
-		printstr_app("\n");
+		char domainbuf[200];
+		ret = resolve_host(udp_sock, ntoh32(iphdr->sip) , domainbuf, 200);
+		if(ret != -1){
+			printstr_app(" (");
+			printstr_app(domainbuf);
+			printstr_app(")\n");
+		} else {
+			printstr_app("\n");
+		}
+
+		//printstr_app("dst: ");
+		//printnum_app((ntoh32(iphdr->dip) >> 24) &0xff);
+		//printstr_app(".");
+		//printnum_app((ntoh32(iphdr->dip) >> 16) &0xff);
+		//printstr_app(".");
+		//printnum_app((ntoh32(iphdr->dip) >> 8) &0xff);
+		//printstr_app(".");
+		//printnum_app(ntoh32(iphdr->dip) &0xff);
+		//printstr_app("\n");
 
 
 		buf += sizeof(struct ip_hdr);
@@ -115,7 +123,7 @@ void task_ping_main() {
 
 void task_b_main() {
 	int i;
-	int sock = udp_socket(IP_HDR_PROTO_ICMP);
+	int sock = udp_socket();
 	char buf[200];
 
 	while(1) {
@@ -179,7 +187,7 @@ void kstart(void)
 	init_timer();
 	wq_init();
 
-	udp_init();
+	udp_socket_init();
 	raw_socket_init();
 	init_arptable();
 	init_r8169();

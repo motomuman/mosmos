@@ -12,50 +12,81 @@
 
 #define NULL 0
 
-struct udp_socket_pkt {
+#define UDP_SOCKET_FREE	0
+#define UDP_SOCKET_USED	1
+
+struct udp_rx_data {
 	struct list_item link;
-	struct pktbuf *pkt;
+	uint8_t *data;
+	int data_len;
 };
 
 struct udp_socket {
-	struct listctl pktlist;
+	struct listctl rx_data_list;
 	struct TASK *receiver;
-	uint16_t port;
 	int wait_id;
+	uint16_t port;
+	uint8_t flag;
 };
 
 #define UDP_SOCKET_COUNT 10
+#define UDP_PORT_START 5000
 
-int next_udp_socket_id = 0;
-uint16_t next_udp_socket_port = 5000;
 struct udp_socket udp_sockets[UDP_SOCKET_COUNT];
 
-void udp_init()
+void udp_socket_init()
 {
-	next_udp_socket_port = 5000;
+	int i;
+	for(i = 0; i < UDP_SOCKET_COUNT; i++) {
+		list_init(&udp_sockets[i].rx_data_list);
+		udp_sockets[i].flag = UDP_SOCKET_FREE;
+	}
 }
 
 int udp_socket()
 {
-	if(next_udp_socket_id >= UDP_SOCKET_COUNT) {
-		printstr_log("ERROR: exceed max udp socket count\n");
+	int i;
+	for(i = 0; i < UDP_SOCKET_COUNT; i++) {
+		if(udp_sockets[i].flag == UDP_SOCKET_FREE) {
+			udp_sockets[i].wait_id = 0;
+			udp_sockets[i].receiver = current_task();
+			udp_sockets[i].flag = UDP_SOCKET_USED;
+			udp_sockets[i].port = UDP_PORT_START + i;
+			return i;
+		}
+	}
+	printstr_log("ERROR: exceed max udp socket count\n");
+	panic();
+	return -1;
+
+
+}
+
+void udp_socket_free(int socket_id)
+{
+	if(socket_id < 0 || socket_id >= UDP_SOCKET_COUNT) {
+		printstr_log("ERROR: invalid udp socket_id\n");
 		panic();
 	}
-	int socket_id = next_udp_socket_id;
-	uint16_t port = next_udp_socket_port;
-	next_udp_socket_id++;
-	next_udp_socket_port++;
-	udp_sockets[socket_id].wait_id = 0;
-	udp_sockets[socket_id].port = port;
-	udp_sockets[socket_id].receiver = current_task();
-	list_init(&udp_sockets[socket_id].pktlist);
+	if(udp_sockets[socket_id].flag != UDP_SOCKET_USED) {
+		printstr_log("ERROR: Tried to free unused udp socket\n");
+		panic();
+	}
+	udp_sockets[socket_id].flag = UDP_SOCKET_FREE;
 
-	return socket_id;
+	while(!list_empty(&udp_sockets[socket_id].rx_data_list)) {
+		struct udp_rx_data *rx_data = (struct udp_rx_data *)list_popfront(&udp_sockets[socket_id].rx_data_list);
+		mem_free(rx_data->data);
+		mem_free(rx_data);
+	}
 }
 
 void udp_socket_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_t size)
 {
-	printstr_app("udp send\n");
+	if(socket_id < 0 || socket_id >= UDP_SOCKET_COUNT) {
+		printstr_log("ERROR: invalid udp socket_id\n");
+		panic();
+	}
 	struct udp_socket socket = udp_sockets[socket_id];
 
 	struct pktbuf * txpkt = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf), "udp_send_pbuf");
@@ -67,7 +98,6 @@ void udp_socket_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, 
 
 	// reserve for ether header and ip_hdr
 	txpkt->buf += sizeof(struct ether_hdr) + sizeof(struct ip_hdr);
-
 
 	// Dummy ip header for checksum
 	txpkt->buf -= sizeof(struct udp_dummy_ip_hdr);
@@ -86,7 +116,6 @@ void udp_socket_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, 
 	udphdr->len =  hton16(sizeof(struct udp_hdr) + size);
 	udphdr->checksum = 0;
 
-
 	// set udp data
 	memcpy(txpkt->buf, buf, size);
 	txpkt->buf -= sizeof(struct udp_hdr);
@@ -97,6 +126,7 @@ void udp_socket_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, 
 			sizeof(struct udp_dummy_ip_hdr) + sizeof(struct udp_hdr) + size);
 	txpkt->buf += sizeof(struct udp_dummy_ip_hdr);
 
+	//send pkt
 	txpkt->buf -= sizeof(struct ip_hdr);
 	ip_tx(txpkt, dip, IP_HDR_PROTO_UDP, 64);
 
@@ -107,21 +137,27 @@ void udp_socket_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, 
 void udp_socket_recv_timeout(void *_args)
 {
 	int *args = (int*) _args;
-	printstr_app("udp_socket_recv_timeout!!!!\n");
 	int socket_id = args[0];
 	int wait_id = args[1];
 	struct udp_socket *socket = &udp_sockets[socket_id];
-	if(socket->wait_id == wait_id){
+	if(socket->flag == UDP_SOCKET_USED
+			&& socket->wait_id == wait_id
+			&& socket->receiver != NULL){
 		task_run(socket->receiver);
 	}
 	mem_free(args);
 }
 
-int udp_socket_recv(int socket_id, uint8_t *buf, uint32_t size)
+int udp_socket_recv(int socket_id, uint8_t *buf, int size)
 {
+	if(socket_id < 0 || socket_id >= UDP_SOCKET_COUNT) {
+		printstr_log("ERROR: invalid udp socket_id\n");
+		panic();
+	}
+
 	struct udp_socket *socket = &udp_sockets[socket_id];
-	if(list_empty(&socket->pktlist)) {
-		printstr_log("udp recv task_sleep\n");
+	if(list_empty(&socket->rx_data_list)) {
+		// set timeout and sleep this task
 		socket->wait_id++;
 		int * args = (int *) mem_alloc(2 * sizeof(int), "udp_timeout_arg");
 		args[0] = socket_id;
@@ -129,41 +165,33 @@ int udp_socket_recv(int socket_id, uint8_t *buf, uint32_t size)
 		wq_push_with_delay(udp_socket_recv_timeout, args, 5000);
 		task_sleep();
 	}
-	if(list_empty(&socket->pktlist)) {
+
+	//timeout
+	if(list_empty(&socket->rx_data_list)) {
 		return -1;
 	}
 
-	struct udp_socket_pkt *pkt = (struct udp_socket_pkt *)list_popfront(&socket->pktlist);
-	memcpy(buf, pkt->pkt->buf, min_uint32(size, pkt->pkt->pkt_len));
-	return 0;
+	struct udp_rx_data *rx_data = (struct udp_rx_data *)list_popfront(&socket->rx_data_list);
+	int data_len = min_int(size, rx_data->data_len);
+	memcpy(buf, rx_data->data, data_len);
+	return data_len;
 }
 
 void udp_rx(struct pktbuf *pkt)
 {
 	struct udp_hdr *udphdr = (struct udp_hdr *)pkt->buf;
 	pkt->buf += sizeof(struct udp_hdr);
-	printstr_app("udp_rx dport:");
-	printnum_app(ntoh16(udphdr->dport));
-	printstr_app("\n");
 
 	int i;
-	for(i = 0; i < next_udp_socket_id; i++){
-		printstr_app("waiting port:");
-		printnum_app(udp_sockets[i].port);
-		printstr_app("\n");
-		if(udp_sockets[i].port == ntoh16(udphdr->dport)) {
-			// copy pkt
-			struct pktbuf * copypkt = (struct pktbuf *)mem_alloc(sizeof(struct pktbuf), "udp_copy_pbuf");
-			copypkt->pkt_len = pkt->pkt_len;
+	for(i = 0; i < UDP_SOCKET_COUNT; i++){
+		if(udp_sockets[i].flag == UDP_SOCKET_USED && udp_sockets[i].port == ntoh16(udphdr->dport)) {
+			// copy pkt data
+			struct udp_rx_data *rx_data = (struct udp_rx_data *) mem_alloc(sizeof(struct udp_rx_data), "rx_data");
+			uint8_t *data = (uint8_t *) mem_alloc(pkt->pkt_len, "rx_data_data");
+			rx_data->data = data;
+			memcpy(data, pkt->buf, pkt->pkt_len - sizeof(struct ether_hdr) - sizeof(struct ip_hdr) - sizeof(struct udp_hdr));
 
-			uint8_t *copybuf = (uint8_t *)mem_alloc(sizeof(uint8_t) * copypkt->pkt_len, "udp_copy_pbuf_buf");
-			copypkt->buf = copybuf;
-			copypkt->buf_head = copybuf;
-			memcpy(copypkt->buf, pkt->buf, pkt->pkt_len - sizeof(struct ether_hdr) - sizeof(struct ip_hdr) - sizeof(struct udp_hdr));
-
-			struct udp_socket_pkt * udp_socket_pkt = (struct udp_socket_pkt *) mem_alloc(sizeof(struct udp_socket_pkt), "udp_socket_pkt");
-			udp_socket_pkt->pkt = copypkt;
-			list_pushback(&udp_sockets[i].pktlist, &udp_socket_pkt->link);
+			list_pushback(&udp_sockets[i].rx_data_list, &rx_data->link);
 			if(udp_sockets[i].receiver != NULL) {
 				task_run(udp_sockets[i].receiver);
 			}
