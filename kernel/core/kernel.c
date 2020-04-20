@@ -66,6 +66,7 @@ void task_ping_main() {
 		int ret = raw_socket_recv(sock, buf, sizeof(struct icmp_hdr) + sizeof(struct ip_hdr));
 		if(ret == -1) {
 			printstr_app("TIMEOUT!!!!\n");
+			raw_socket_free(sock);
 			continue;
 		}
 		printstr_app("TTL: ");
@@ -91,17 +92,6 @@ void task_ping_main() {
 		} else {
 			printstr_app("\n");
 		}
-
-		//printstr_app("dst: ");
-		//printnum_app((ntoh32(iphdr->dip) >> 24) &0xff);
-		//printstr_app(".");
-		//printnum_app((ntoh32(iphdr->dip) >> 16) &0xff);
-		//printstr_app(".");
-		//printnum_app((ntoh32(iphdr->dip) >> 8) &0xff);
-		//printstr_app(".");
-		//printnum_app(ntoh32(iphdr->dip) &0xff);
-		//printstr_app("\n");
-
 
 		buf += sizeof(struct ip_hdr);
 		icmphdr = (struct icmp_hdr *)buf;

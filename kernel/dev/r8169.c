@@ -169,8 +169,8 @@ void r8169_int_handler() {
 	if(status & RxOverflow) printstr_log("RxOverflow\n");
 	if(status & TxErr) printstr_log("TxErr\n");
 	if(status & RxErr) printstr_log("RxErr\n");
-	if(status & TxOK) printstr_log("Packet tx interrupt\n");
-	if(status & RxOK) printstr_log("Packet rx interrupt\n");
+	//if(status & TxOK) printstr_log("Packet tx interrupt\n");
+	//if(status & RxOK) printstr_log("Packet rx interrupt\n");
 
 	if(status & RxOK) {
 		receive_packet();

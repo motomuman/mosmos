@@ -187,9 +187,13 @@ void udp_rx(struct pktbuf *pkt)
 		if(udp_sockets[i].flag == UDP_SOCKET_USED && udp_sockets[i].port == ntoh16(udphdr->dport)) {
 			// copy pkt data
 			struct udp_rx_data *rx_data = (struct udp_rx_data *) mem_alloc(sizeof(struct udp_rx_data), "rx_data");
+
+			int data_len = pkt->pkt_len - sizeof(struct ether_hdr) - sizeof(struct ip_hdr) - sizeof(struct udp_hdr);
+			rx_data->data_len = data_len;
+
 			uint8_t *data = (uint8_t *) mem_alloc(pkt->pkt_len, "rx_data_data");
 			rx_data->data = data;
-			memcpy(data, pkt->buf, pkt->pkt_len - sizeof(struct ether_hdr) - sizeof(struct ip_hdr) - sizeof(struct udp_hdr));
+			memcpy(data, pkt->buf, data_len);
 
 			list_pushback(&udp_sockets[i].rx_data_list, &rx_data->link);
 			if(udp_sockets[i].receiver != NULL) {

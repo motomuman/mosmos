@@ -87,16 +87,6 @@ void handle_arp_request(struct arp_etherip *arp)
 
 		mem_free(pkt->buf_head);
 		mem_free(pkt);
-	} else {
-		printstr_log("ignore arp to: ");
-		printnum_log((ntoh32(arp->dip) >> 24) & 0xff);
-		printstr_log(".");
-		printnum_log((ntoh32(arp->dip) >> 16) & 0xff);
-		printstr_log(".");
-		printnum_log((ntoh32(arp->dip) >> 8) & 0xff);
-		printstr_log(".");
-		printnum_log((ntoh32(arp->dip) >> 0) & 0xff);
-		printstr_log("\n");
 	}
 }
 
@@ -107,7 +97,6 @@ void handle_arp_response(struct arp_etherip *arp)
 
 void arp_rx(struct pktbuf *pkt)
 {
-	printstr_log("arp_rx: ");
 	struct arp_hdr *arphdr = (struct arp_hdr *)pkt->buf;
 	pkt->buf += sizeof(struct arp_hdr);
 	struct arp_etherip *arp = (struct arp_etherip *)pkt->buf;

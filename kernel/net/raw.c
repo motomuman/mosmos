@@ -153,9 +153,14 @@ void raw_recv(struct pktbuf *pkt, uint8_t proto)
 		if(raw_sockets[i].flag == RAW_SOCKET_USED && raw_sockets[i].proto == proto) {
 			// copy pkt data
 			struct raw_rx_data *rx_data = (struct raw_rx_data *) mem_alloc(sizeof(struct raw_rx_data), "rx_data");
+
+			int data_len = pkt->pkt_len - sizeof(struct ether_hdr);
+			rx_data->data_len = data_len;
+
 			uint8_t *data = (uint8_t *) mem_alloc(pkt->pkt_len, "rx_data_data");
 			rx_data->data = data;
-			memcpy(data, pkt->buf, pkt->pkt_len - sizeof(struct ip_hdr));
+			memcpy(data, pkt->buf, data_len);
+
 			list_pushback(&raw_sockets[i].rx_data_list, &rx_data->link);
 			if(raw_sockets[i].receiver != NULL) {
 				task_run(raw_sockets[i].receiver);

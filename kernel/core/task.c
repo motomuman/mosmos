@@ -98,10 +98,10 @@ void task_sleep()
 {
        // can not sleep if no running task or only one task is running
        struct TASK *current_task = (struct TASK *) list_head(&taskctl.list);
-       printstr_log("task_sleep: ");
-       printnum_log(current_task->task_id);
-       printstr_log("\n");
-       task_show();
+       //printstr_log("task_sleep: ");
+       //printnum_log(current_task->task_id);
+       //printstr_log("\n");
+       //task_show();
        if(current_task == NULL || list_next(&current_task->link) == NULL) {
                return;
        }
@@ -124,11 +124,11 @@ uint64_t** schedule() {
 		if (current_task->flag != TASK_WAITING) {
 			list_pushback(&taskctl.list, &current_task->link);
 		}
-		printstr_log("shedule:");
-		printnum_log(current_task->task_id);
-		printstr_log(" -> ");
-		printnum_log(next_task->task_id);
-		printstr_log("\n");
+		//printstr_log("shedule:");
+		//printnum_log(current_task->task_id);
+		//printstr_log(" -> ");
+		//printnum_log(next_task->task_id);
+		//printstr_log("\n");
 
 		rsp[0] = &current_task->rsp;
 		rsp[1] = &next_task->rsp;
