@@ -8,5 +8,6 @@ uint32_t strlen(char *str);
 void panic();
 uint32_t max_uint32(uint32_t num1, uint32_t num2);
 uint32_t min_uint32(uint32_t num1, uint32_t num2);
+int min_int(int num1, int num2);
 
 #endif

@@ -65,16 +65,21 @@ void ip_rx(struct pktbuf *pkt)
 {
 	struct ip_hdr *iphdr = (struct ip_hdr *)pkt->buf;
 
+	if(iphdr->flafra != 0) {
+		printstr_log("ignore fragmented ip");
+		return;
+	}
+
 	if(get_netdev()->ip_addr != ntoh32(iphdr->dip)) {
-		printstr_app("ignore ip packt to:");
-		printnum_app((ntoh32(iphdr->dip) >> 24) & 0xff);
-		printstr_app(".");
-		printnum_app((ntoh32(iphdr->dip) >> 16) & 0xff);
-		printstr_app(".");
-		printnum_app((ntoh32(iphdr->dip) >> 8) & 0xff);
-		printstr_app(".");
-		printnum_app((ntoh32(iphdr->dip) >> 0) & 0xff);
-		printstr_app("\n");
+		printstr_log("ignore ip packt to:");
+		printnum_log((ntoh32(iphdr->dip) >> 24) & 0xff);
+		printstr_log(".");
+		printnum_log((ntoh32(iphdr->dip) >> 16) & 0xff);
+		printstr_log(".");
+		printnum_log((ntoh32(iphdr->dip) >> 8) & 0xff);
+		printstr_log(".");
+		printnum_log((ntoh32(iphdr->dip) >> 0) & 0xff);
+		printstr_log("\n");
 		return;
 	}
 
@@ -83,18 +88,18 @@ void ip_rx(struct pktbuf *pkt)
 
 	switch(iphdr->proto) {
 		case IP_HDR_PROTO_ICMP:
-			printstr_app("ip_rx: ICMP\n");
+			printstr_log("ip_rx: ICMP\n");
 			icmp_rx(pkt, iphdr->sip);
 			break;
 		case IP_HDR_PROTO_TCP:
-			printstr_app("ip_rx: TCP\n");
+			printstr_log("ip_rx: TCP\n");
 			break;
 		case IP_HDR_PROTO_UDP:
-			printstr_app("ip_rx: UDP\n");
+			printstr_log("ip_rx: UDP\n");
 			udp_rx(pkt);
 			break;
 		default:
-			printstr_app("ip_rx: UNKNOWN proto\n");
+			printstr_log("ip_rx: UNKNOWN proto\n");
 			break;
 	}
 }

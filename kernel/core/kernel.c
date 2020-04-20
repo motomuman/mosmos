@@ -42,12 +42,13 @@ void task_ping_main() {
 	int i;
 	int ttl = 1;
 
-	int sock = raw_socket(IP_HDR_PROTO_ICMP);
 
 	uint8_t *buf = (uint8_t*) mem_alloc(sizeof(struct icmp_hdr) + sizeof(struct ip_hdr), "icmphdr");
 	while(1) {
 		for(i = 0; i < 100000000; i++){
 		}
+		int sock = raw_socket(IP_HDR_PROTO_ICMP);
+
 		struct icmp_hdr *icmphdr = (struct icmp_hdr *) buf;
 		icmphdr->type = ICMP_HDR_TYPE_ECHO_REQUEST;
 		icmphdr->code = 0;
@@ -105,11 +106,10 @@ void task_ping_main() {
 		}else{
 			printstr_app("ICMP_HDR_TYPE_ECHO_INVALID\n");
 		}
-		printstr_app("CODE: ");
-		printnum_app(icmphdr->code);
-		printstr_app("\n");
 
 		buf -= sizeof(struct ip_hdr);
+
+		raw_socket_free(sock);
 	}
 }
 
@@ -180,6 +180,7 @@ void kstart(void)
 	wq_init();
 
 	udp_init();
+	raw_socket_init();
 	init_arptable();
 	init_r8169();
 	uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 16;
@@ -201,7 +202,7 @@ void kstart(void)
 	struct TASK *task_b;
 	struct TASK *task_c;
 	task_a = task_init();
-	task_b = task_alloc(task_b_main);
+	task_b = task_alloc(task_ping_main);
 	task_run(task_b);
 
 	task_c = task_alloc(task_c_main);
