@@ -11,16 +11,19 @@ global _io_stihlt
 global _asm_int_keyboard
 global _asm_int_pit
 global _asm_int_r8169
+global _asm_syscall_handler
 global _load_idtr
 global _load_gdtr
 global _load_tr
 global _farjmp
 global _task_switch
+global _test_print
 
 extern _int_keyboard
 extern _int_pit
 extern _r8169_int_handler
 extern _schedule
+extern _syscall_handler
 
 ; rdi - used to pass 1st argument to functions
 ; rsi - used to pass 2nd argument to functions
@@ -173,6 +176,32 @@ _asm_int_r8169:
 	pop     rax
 	iretq
 
+_asm_syscall_handler:
+	push    rcx
+	push    rdx
+	push    rbx
+	push    rbp
+	push    rsi
+	push    rdi
+	push	r8
+	push	r9
+	push	r10
+	push	r11
+
+	call 	_syscall_handler
+
+	pop	r11
+	pop	r10
+	pop	r9
+	pop	r8
+	pop     rdi
+	pop     rsi
+	pop     rbp
+	pop     rbx
+	pop     rdx
+	pop     rcx
+	iretq
+
 ; void load_idtr(void *idtr)
 _load_idtr:
 	lidt	[rdi]
@@ -283,4 +312,35 @@ _task_switch:
 	pop	rcx
 	pop	rbx
 	pop	rbp
+	ret
+
+; test_print(char *);
+_test_print:
+	push    rcx
+	push    rdx
+	push    rbx
+	push    rbp
+	push    rsi
+	push    rdi
+	push	r8
+	push	r9
+	push	r10
+	push	r11
+
+	; rdi - used to pass 1st argument to functions
+	; rsi - used to pass 2nd argument to functions
+	mov	rsi, rdi
+	mov	rdi, 0x01
+	int	0x40
+
+	pop	r11
+	pop	r10
+	pop	r9
+	pop	r8
+	pop     rdi
+	pop     rsi
+	pop     rbp
+	pop     rbx
+	pop     rdx
+	pop     rcx
 	ret

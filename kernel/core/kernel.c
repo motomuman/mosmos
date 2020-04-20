@@ -18,6 +18,7 @@
 #include "udp.h"
 #include "dns.h"
 #include "lib.h"
+#include "syscall.h"
 
 #define NULL 0
 
@@ -175,6 +176,7 @@ void kstart(void)
 	mem_init();
 	init_pit();
 	init_timer();
+	init_syscall();
 	wq_init();
 
 	udp_socket_init();
@@ -196,17 +198,21 @@ void kstart(void)
 	//set_timer(hello, NULL, 1000);
 	//set_timer(hello2, NULL, 3000);
 
-	struct TASK *task_a;
-	struct TASK *task_b;
-	struct TASK *task_c;
-	task_a = task_init();
-	task_b = task_alloc(task_ping_main);
-	task_run(task_b);
+	//struct TASK *task_a;
+	//struct TASK *task_b;
+	//struct TASK *task_c;
+	//task_a = task_init();
+	//task_b = task_alloc(task_ping_main);
+	//task_run(task_b);
 
-	task_c = task_alloc(task_c_main);
-	task_run(task_c);
+	//task_c = task_alloc(task_c_main);
+	//task_run(task_c);
 
-	wq_set_receiver(task_a);
+	//wq_set_receiver(task_a);
+	int ret = test_print("hogehoge");
+	printstr_app("return from syscall ret:");
+	printnum_app(ret);
+	printstr_app("\n");
 
 	while(1){
 		io_cli();

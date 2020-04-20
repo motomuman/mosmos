@@ -19,6 +19,7 @@ OBJS_KERNEL += core/task.o
 OBJS_KERNEL += core/workqueue.o
 OBJS_KERNEL += core/netdev.o
 OBJS_KERNEL += core/pci.o
+OBJS_KERNEL += core/syscall.o
 OBJS_KERNEL += net/ether.o
 OBJS_KERNEL += net/netutil.o
 OBJS_KERNEL += net/arp.o

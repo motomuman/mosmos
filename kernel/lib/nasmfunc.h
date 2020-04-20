@@ -20,6 +20,8 @@ void farjmp(int cip, int cs);
 void asm_int_keyboard();
 void asm_int_pit();
 void asm_int_r8169();
+void asm_syscall_handler();
 void task_switch();
+int test_print(char *str);
 
 #endif
