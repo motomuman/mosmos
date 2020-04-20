@@ -6,8 +6,7 @@
 struct tss {
     uint32_t reserved1;
     uint32_t rsp0l;
-    uint32_t rsp0h;
-    uint32_t rsp1l;
+    uint32_t rsp0h; uint32_t rsp1l;
     uint32_t rsp1h;
     uint32_t rsp2l;
     uint32_t rsp2h;
@@ -199,6 +198,27 @@ void set_gdt_tss_desc(struct gdt_tss_desc *e, uint64_t base, uint32_t limit,
 void set_gdt_seg_desc(struct gdt_seg_desc *sd, uint64_t base, uint64_t limit,
 		uint8_t type, uint8_t dpl, uint8_t l, uint8_t db, uint8_t g);
 
+/*
+ * GDT 0x00090000 - 0x0009ffff
+ *
+ * struct gdt_seg_desc: 8bytes
+ * struct gdt_tss_desc: 16bytes
+ * struct gdtr: 10bytes
+ * 3 * 8 + 16 + 10 = 50bytes
+ */
+#define ADR_GDT 0x00090000
+#define GDT_TSS_START 3
+
+/*
+ * IDT 0x00100000 - 0x001007ff
+ *
+ * struct idt_gate: 16bytes
+ * struct idtr: 10bytes
+ * 16 * 256 + 10 = 4106 (4KB + 10B)
+ */
+#define ADR_IDT 0x00091000
+#define IDT_NUM 256
+
 void init_gdtidt()
 {
 	int i;
@@ -218,12 +238,12 @@ void init_gdtidt()
 
 	// tss
 	struct gdt_tss_desc *tss;
-	tss = (struct gdt_tss_desc *)(ADR_GDT + 3 * sizeof(struct gdt_seg_desc));
+	tss = (struct gdt_tss_desc *)(ADR_GDT + GDT_TSS_START * sizeof(struct gdt_seg_desc));
 	set_gdt_tss_desc(tss, (uint64_t) &tss_storage, sizeof(struct tss) - 1, DESC_TYPE_TSS_AVAILABLE, 0, 0);
 
 	// gdtr
 	struct gdtr *gdtr;
-	uint64_t sz = 3 * sizeof(struct gdt_seg_desc) + 1 * sizeof(struct gdt_tss_desc);
+	uint64_t sz = GDT_TSS_START * sizeof(struct gdt_seg_desc) + 1 * sizeof(struct gdt_tss_desc);
 	gdtr = (struct gdtr *)(ADR_GDT + sz);
 	gdtr->base = ADR_GDT;
 	gdtr->size = sz - 1;
@@ -249,10 +269,9 @@ void init_tss(void)
 
 void tr_load()
 {
-    load_tr(3 * sizeof(struct gdt_seg_desc));
+    load_tr(GDT_TSS_START * sizeof(struct gdt_seg_desc));
 }
 
-//void set_gdt_seg_desc(struct gdt_seg_desc *sd, uint64_t base, uint64_t limit, int ar)
 void set_gdt_seg_desc(struct gdt_seg_desc *sd, uint64_t base, uint64_t limit, uint8_t type,
 	               uint8_t dpl, uint8_t l, uint8_t db, uint8_t g)
 {
@@ -275,7 +294,6 @@ void set_gdt_tss_desc(struct gdt_tss_desc *e, uint64_t base, uint32_t limit,
     limit &= 0xfffff;
     type &= 0xf;
 
-    /* g => *4KiB */
     e->limit_low = limit & 0xffff;
     e->base_low = base & 0xffff;
     e->w2 = ((base >> 16) & 0xff) | ((uint64_t)type << 8) | ((uint64_t)dpl << 13) | ((uint64_t)1 << 15); // 15th bit is Pflag
