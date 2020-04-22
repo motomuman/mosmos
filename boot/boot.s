@@ -287,7 +287,8 @@ LEVEL2:
 
 LEVEL1:
 	mov     edi, PGTBL + 0x2000		; PGTBL + 0x2000 is start address of level1 table
-	mov     eax, 0x083			; (10000011) R/W root access, 2MB paging
+	mov     eax, 0x087			; (10000111) R/W user access, 2MB paging
+						; This is for temporary, this should be root access (0x83)
 	mov     ecx, 512*4			; 4tables
 .loop:
 	mov     [edi], eax

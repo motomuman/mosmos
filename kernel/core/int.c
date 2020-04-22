@@ -2,6 +2,7 @@
 #include "nasmfunc.h"
 #include "dsctbl.h"
 #include "int.h"
+#include "print.h"
 
 uint8_t master_imr;
 uint8_t slave_imr;
@@ -56,4 +57,12 @@ void pic_sendeoi(int irq)
 		io_out8(0xa0, 0x20);
 	}
 	io_out8(0x20, 0x20);
+}
+
+void int_default(uint64_t irq) {
+	printstr_log("unhandlerd default interruption: ");
+	printnum_log(irq);
+	printstr_log("\n");
+	io_hlt();
+	return;
 }

@@ -70,10 +70,10 @@ struct TASK *task_alloc(void (*func)())
 
     sf->sp = task->rsp - STACK_LENGTH/2;
     sf->ip = task->rip;
-    sf->cs = 8;
-    sf->ss = 16;
-    sf->fs = 16;
-    sf->gs = 16;
+    sf->cs = 24 + 3;
+    sf->ss = 32 + 3;
+    sf->fs = 32 + 3;
+    sf->gs = 32 + 3;
     sf->flags = 0x202;
     task->rsp = task->rsp - sizeof(struct stackframe64);
 
@@ -124,11 +124,11 @@ uint64_t** schedule() {
 		if (current_task->flag != TASK_WAITING) {
 			list_pushback(&taskctl.list, &current_task->link);
 		}
-		//printstr_log("shedule:");
-		//printnum_log(current_task->task_id);
-		//printstr_log(" -> ");
-		//printnum_log(next_task->task_id);
-		//printstr_log("\n");
+		printstr_log("shedule:");
+		printnum_log(current_task->task_id);
+		printstr_log(" -> ");
+		printnum_log(next_task->task_id);
+		printstr_log("\n");
 
 		rsp[0] = &current_task->rsp;
 		rsp[1] = &next_task->rsp;

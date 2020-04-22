@@ -16,5 +16,5 @@ int syscall_handler(uint64_t rdi, uint64_t rsi)
 
 void init_syscall()
 {
-	set_idt(0x40, asm_syscall_handler);
+	set_syscall(0x80, asm_syscall_handler);
 }

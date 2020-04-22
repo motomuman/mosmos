@@ -5,6 +5,7 @@
 
 void init_gdtidt();
 void set_idt(uint8_t idtidx, void* handler);
+void set_syscall(uint8_t idtidx, void* handler);
 void init_tss(void);
 void tr_load();
 

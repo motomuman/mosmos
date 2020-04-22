@@ -144,12 +144,20 @@ void task_b_main() {
 	}
 }
 
-void task_c_main() {
+void task_userland_main() {
+	int count = 0;
 	int i;
 	while(1) {
 		for(i = 0; i < 200000000; i++){
 		}
-		//printstr_app("task_c_main\n");
+		int ret = test_print("user: syscall");
+		printstr_app("user: syscall ret = ");
+		printnum_app(ret);
+		printstr_app("\n");
+		count++;
+		if(count == 10){
+			io_cli(); //trigger General Protection Fault
+		}
 	}
 }
 
@@ -198,21 +206,18 @@ void kstart(void)
 	//set_timer(hello, NULL, 1000);
 	//set_timer(hello2, NULL, 3000);
 
-	//struct TASK *task_a;
+	struct TASK *task_a;
 	//struct TASK *task_b;
-	//struct TASK *task_c;
-	//task_a = task_init();
+	struct TASK *task_c;
+	task_a = task_init();
 	//task_b = task_alloc(task_ping_main);
 	//task_run(task_b);
 
-	//task_c = task_alloc(task_c_main);
-	//task_run(task_c);
+	test_print("kern: syscall");
+	task_c = task_alloc(task_userland_main);
+	task_run(task_c);
 
-	//wq_set_receiver(task_a);
-	int ret = test_print("hogehoge");
-	printstr_app("return from syscall ret:");
-	printnum_app(ret);
-	printstr_app("\n");
+	wq_set_receiver(task_a);
 
 	while(1){
 		io_cli();

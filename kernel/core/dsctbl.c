@@ -6,7 +6,8 @@
 struct tss {
     uint32_t reserved1;
     uint32_t rsp0l;
-    uint32_t rsp0h; uint32_t rsp1l;
+    uint32_t rsp0h;
+    uint32_t rsp1l;
     uint32_t rsp1h;
     uint32_t rsp2l;
     uint32_t rsp2h;
@@ -144,7 +145,7 @@ struct gdtr {
 
 #define IDT_GATE_FLAG_PRESENT     0x80
 #define IDT_GATE_FLAG_INTGATE     0x0e
-#define IDT_GATE_FLAG_TRAPGATE    0x0f
+#define IDT_GATE_FLAG_DPL_USER    0x60
 
 struct idt_gate {
    uint16_t offset_low;
@@ -207,7 +208,7 @@ void set_gdt_seg_desc(struct gdt_seg_desc *sd, uint64_t base, uint64_t limit,
  * 3 * 8 + 16 + 10 = 50bytes
  */
 #define ADR_GDT 0x00090000
-#define GDT_TSS_START 3
+#define GDT_TSS_START 5
 
 /*
  * IDT 0x00100000 - 0x001007ff
@@ -233,8 +234,10 @@ void init_gdtidt()
 
 	// Code/Data descriptor
 	//set_gdt_seg_desc(*sd,      base,       limit,   type, dpl, l, db, g)
-	set_gdt_seg_desc(gdt + 1, 0x00000000, 0xffffffff, code,   0, 1, 0, 1);
-	set_gdt_seg_desc(gdt + 2, 0x00000000, 0xffffffff, data,   0, 1, 0, 1);
+	set_gdt_seg_desc(gdt + 1, 0x00000000, 0xffffffff, code,   0, 1, 0, 1); //kernel code
+	set_gdt_seg_desc(gdt + 2, 0x00000000, 0xffffffff, data,   0, 1, 0, 1); //kernet data
+	set_gdt_seg_desc(gdt + 3, 0x00000000, 0xffffffff, code,   3, 1, 0, 1); //user code
+	set_gdt_seg_desc(gdt + 4, 0x00000000, 0xffffffff, data,   3, 1, 0, 1); //user data
 
 	// tss
 	struct gdt_tss_desc *tss;
@@ -253,6 +256,26 @@ void init_gdtidt()
 	for (i = 0; i < IDT_NUM; i++) {
 		set_idt(i, 0);
 	}
+	set_idt(0, asm_int_0);
+	set_idt(1, asm_int_1);
+	set_idt(2, asm_int_2);
+	set_idt(3, asm_int_3);
+	set_idt(4, asm_int_4);
+	set_idt(5, asm_int_5);
+	set_idt(6, asm_int_6);
+	set_idt(7, asm_int_7);
+	set_idt(8, asm_int_8);
+	set_idt(9, asm_int_9);
+	set_idt(10, asm_int_10);
+	set_idt(11, asm_int_11);
+	set_idt(12, asm_int_12);
+	set_idt(13, asm_int_13);
+	set_idt(14, asm_int_14);
+	set_idt(15, asm_int_15);
+	set_idt(16, asm_int_16);
+	set_idt(17, asm_int_17);
+	set_idt(18, asm_int_18);
+	set_idt(19, asm_int_19);
 
 	struct idtr *idtr;
 	idtr = (struct idtr *)(ADR_IDT + sizeof(struct idt_gate) * IDT_NUM);
@@ -263,8 +286,10 @@ void init_gdtidt()
 
 void init_tss(void)
 {
-	struct tss *tss = &tss_storage;;
+	struct tss *tss = &tss_storage;
 	memset(tss, 0, sizeof(struct tss));
+	tss->rsp0l = 0x00010000;
+	tss->rsp0h = 0;
 }
 
 void tr_load()
@@ -318,4 +343,10 @@ void set_idt(uint8_t idtidx, void* handler)
 {
 	struct idt_gate *idt = (struct idt_gate *) ADR_IDT;
 	set_idt_gate(idt + idtidx, (uint64_t) handler, 8, IDT_GATE_FLAG_PRESENT | IDT_GATE_FLAG_INTGATE);
+}
+
+void set_syscall(uint8_t idtidx, void* handler)
+{
+	struct idt_gate *idt = (struct idt_gate *) ADR_IDT;
+	set_idt_gate(idt + idtidx, (uint64_t) handler, 8, IDT_GATE_FLAG_PRESENT | IDT_GATE_FLAG_INTGATE | IDT_GATE_FLAG_DPL_USER);
 }

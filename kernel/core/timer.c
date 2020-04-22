@@ -65,6 +65,9 @@ void int_pit(int *esp) {
 	pic_sendeoi(PIT_IRQ);
 	tick++;
 	if(tick%200 == 0) {
+		printstr_log("int_pit, args addr ");
+		printhex_log((uint64_t) &esp);
+		printstr_log("\n");
 		printstr_log("task_switch ");
 		task_show();
 		task_switch();
