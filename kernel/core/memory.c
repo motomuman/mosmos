@@ -1,4 +1,3 @@
-#include "nasmfunc.h"
 #include "memory.h"
 #include "print.h"
 #include "lib.h"

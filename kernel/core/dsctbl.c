@@ -1,6 +1,6 @@
-#include "nasmfunc.h"
 #include "dsctbl.h"
 #include "lib.h"
+#include "asm.h"
 
 // 64bit tss
 struct tss {

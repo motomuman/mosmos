@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include "print.h"
-#include "nasmfunc.h"
 #include "pci.h"
+#include "asm.h"
 
 /*
  * https://wiki.osdev.org/PCI

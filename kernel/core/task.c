@@ -1,9 +1,9 @@
 #include "task.h"
-#include "nasmfunc.h"
 #include "dsctbl.h"
 #include "memory.h"
 #include "print.h"
 #include "lib.h"
+#include "asm.h"
 
 #define STACK_LENGTH    0x1000
 

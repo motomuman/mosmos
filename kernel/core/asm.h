@@ -1,5 +1,5 @@
-#ifndef _NASMFUNK_H_
-#define _NASMFUNK_H_
+#ifndef _ASM_H_
+#define _ASM_H_
 
 #include <stdint.h>
 
@@ -16,13 +16,11 @@ void io_stihlt();
 void load_idtr(void *idtr);
 void load_gdtr(void *gdtr);
 void load_tr(uint16_t tr);
-void farjmp(int cip, int cs);
 void asm_int_keyboard();
 void asm_int_pit();
 void asm_int_r8169();
 void asm_syscall_handler();
 void task_switch();
-int test_print(char *str);
 
 void asm_int_0();
 void asm_int_1();

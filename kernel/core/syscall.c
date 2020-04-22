@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include "dsctbl.h"
-#include "nasmfunc.h"
 #include "print.h"
+#include "intasm.h"
 
 int syscall_handler(uint64_t rdi, uint64_t rsi)
 {

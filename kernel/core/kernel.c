@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include "print.h"
-#include "nasmfunc.h"
 #include "int.h"
 #include "dsctbl.h"
 #include "timer.h"
@@ -19,6 +18,8 @@
 #include "dns.h"
 #include "lib.h"
 #include "syscall.h"
+#include "asm.h"
+#include "user_app.h"
 
 #define NULL 0
 
@@ -144,23 +145,6 @@ void task_b_main() {
 	}
 }
 
-void task_userland_main() {
-	int count = 0;
-	int i;
-	while(1) {
-		for(i = 0; i < 200000000; i++){
-		}
-		int ret = test_print("user: syscall");
-		printstr_app("user: syscall ret = ");
-		printnum_app(ret);
-		printstr_app("\n");
-		count++;
-		if(count == 10){
-			io_cli(); //trigger General Protection Fault
-		}
-	}
-}
-
 void hello() {
 	printstr_app("Hello Timer\n");
 	set_timer(hello, NULL, 1000);
@@ -213,8 +197,7 @@ void kstart(void)
 	//task_b = task_alloc(task_ping_main);
 	//task_run(task_b);
 
-	test_print("kern: syscall");
-	task_c = task_alloc(task_userland_main);
+	task_c = task_alloc(userland_main);
 	task_run(task_c);
 
 	wq_set_receiver(task_a);

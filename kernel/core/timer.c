@@ -1,11 +1,11 @@
 #include <stdint.h>
-#include "nasmfunc.h"
 #include "int.h"
 #include "list.h"
 #include "memory.h"
 #include "print.h"
 #include "task.h"
 #include "lib.h"
+#include "asm.h"
 
 struct timer_entry {
 	struct list_item link;

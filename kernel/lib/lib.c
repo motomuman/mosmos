@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include "print.h"
-#include "nasmfunc.h"
+#include "asm.h"
 
 void memcpy(void *_dst, void *_src, uint32_t size)
 {

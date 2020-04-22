@@ -1,12 +1,12 @@
 #include "print.h"
 #include "pci.h"
 #include "r8169.h"
-#include "nasmfunc.h"
 #include "memory.h"
 #include "int.h"
 #include "workqueue.h"
 #include "netdev.h"
 #include "lib.h"
+#include "asm.h"
 
 /*
  * References

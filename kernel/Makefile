@@ -7,7 +7,7 @@ AS = nasm
 CC = gcc
 
 ASFLAGS = -f elf64
-CFLAGS  =  -Wall -g -fleading-underscore -fno-builtin -nostdlib -I core -I dev -I lib -I net
+CFLAGS  =  -Wall -g -fleading-underscore -fno-builtin -nostdlib -I core -I dev -I lib -I net -I user
 
 OBJS_KERNEL = core/kasm.o
 OBJS_KERNEL += core/kernel.o
@@ -20,6 +20,8 @@ OBJS_KERNEL += core/workqueue.o
 OBJS_KERNEL += core/netdev.o
 OBJS_KERNEL += core/pci.o
 OBJS_KERNEL += core/syscall.o
+OBJS_KERNEL += core/asm.o
+OBJS_KERNEL += core/intasm.o
 OBJS_KERNEL += net/ether.o
 OBJS_KERNEL += net/netutil.o
 OBJS_KERNEL += net/arp.o
@@ -27,12 +29,15 @@ OBJS_KERNEL += net/ip.o
 OBJS_KERNEL += net/icmp.o
 OBJS_KERNEL += net/raw.o
 OBJS_KERNEL += net/udp.o
-OBJS_KERNEL += lib/nasmfunc.o
 OBJS_KERNEL += lib/list.o
 OBJS_KERNEL += lib/lib.o
 OBJS_KERNEL += lib/print.o
 OBJS_KERNEL += lib/dns.o
 OBJS_KERNEL += dev/r8169.o
+
+# Will build separately
+OBJS_KERNEL += user/user_syscall.o
+OBJS_KERNEL += user/user_app.o
 
 kernel: $(OBJS_KERNEL)
 	$(LD) -N -T core/kernel.ld -o $@ $^

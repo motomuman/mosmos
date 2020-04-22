@@ -1,8 +1,8 @@
 #include <stdint.h>
-#include "nasmfunc.h"
 #include "dsctbl.h"
 #include "int.h"
 #include "print.h"
+#include "asm.h"
 
 uint8_t master_imr;
 uint8_t slave_imr;
