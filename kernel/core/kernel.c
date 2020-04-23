@@ -20,25 +20,9 @@
 #include "syscall.h"
 #include "asm.h"
 #include "user_app.h"
+#include "keyboard.h"
 
 #define NULL 0
-
-void print_key(void *_ch) {
-	uint8_t *ch = (uint8_t *)_ch;
-	printstr_app("print_key: ");
-	printhex_app(*ch);
-	printstr_app("\n");
-	mem_free(ch);
-}
-
-void int_keyboard(int *esp) {
-	uint8_t *ch = (uint8_t *)mem_alloc(1, "int_key_ch");
-	pic_sendeoi(KEYBOARD_IRQ);
-	*ch = io_in8(0x0060);	// get input key code
-	printstr_log("keyint\n");
-	wq_push(print_key, ch);
-	return;
-}
 
 void task_ping_main() {
 	int i;
@@ -165,6 +149,7 @@ void kstart(void)
 	tr_load();
 
 	init_interrupt();
+	init_keyboard();
 	mem_init();
 	init_pit();
 	init_timer();
@@ -205,7 +190,7 @@ void kstart(void)
 	while(1){
 		io_cli();
 		if(wq_empty()) {
-			task_sleep();
+			//task_sleep();
 			io_sti();
 		} else {
 			io_sti();

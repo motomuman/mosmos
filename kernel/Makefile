@@ -22,6 +22,7 @@ OBJS_KERNEL += core/pci.o
 OBJS_KERNEL += core/syscall.o
 OBJS_KERNEL += core/asm.o
 OBJS_KERNEL += core/intasm.o
+OBJS_KERNEL += core/keyboard.o
 OBJS_KERNEL += net/ether.o
 OBJS_KERNEL += net/netutil.o
 OBJS_KERNEL += net/arp.o

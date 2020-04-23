@@ -43,3 +43,8 @@ int sys_udp_socket_recv(int sock, uint8_t *buf, int size)
 {
 	return sys_call(8, (uint64_t)sock, (uint64_t)buf, (uint64_t)size, 0, 0);
 }
+
+int sys_key_getc()
+{
+	return sys_call(9, 0, 0, 0, 0, 0);
+}

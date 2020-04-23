@@ -11,5 +11,6 @@ int sys_raw_socket_recv(int sock, uint8_t *buf, int size);
 int sys_udp_socket();
 int sys_udp_socket_send(int sock, uint32_t dip, uint16_t dport, uint8_t *buf, int size);
 int sys_udp_socket_recv(int sock, uint8_t *buf, int size);
+int sys_key_getc();
 
 #endif

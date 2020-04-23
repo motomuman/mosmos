@@ -48,7 +48,6 @@ void register_interrupt(int irq, void* handler) {
 void init_interrupt()
 {
 	init_pic();
-	register_interrupt(KEYBOARD_IRQ, asm_int_keyboard);
 }
 
 void pic_sendeoi(int irq)
