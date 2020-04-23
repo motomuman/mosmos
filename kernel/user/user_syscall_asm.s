@@ -1,7 +1,5 @@
-
-global _sys_print
-; sys_print(char *);
-_sys_print:
+global _sys_call
+_sys_call:
 	push    rcx
 	push    rdx
 	push    rbx
@@ -13,10 +11,6 @@ _sys_print:
 	push    r10
 	push    r11
 
-	; rdi - used to pass 1st argument to functions
-	; rsi - used to pass 2nd argument to functions
-	mov     rsi, rdi
-	mov     rdi, 0x01
 	int     0x80
 
 	pop     r11
@@ -30,4 +24,3 @@ _sys_print:
 	pop     rdx
 	pop     rcx
 	ret
-

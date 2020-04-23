@@ -1,6 +1,8 @@
 #ifndef _RAW_H_
 #define _RAW_H_
 
+struct pktbuf;
+
 void raw_socket_init();
 int raw_socket(uint8_t proto);
 void raw_socket_free(int socket_id);
