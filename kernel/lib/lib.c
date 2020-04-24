@@ -39,6 +39,26 @@ uint32_t strlen(char *str)
 	return len;
 }
 
+int strcmp(char *str1, char *str2)
+{
+	int pos = 0;
+	while(str1[pos] == str2[pos]) {
+		pos++;
+	}
+	return (str1[pos] == 0 && str2[pos] == 0);
+}
+
+int strncmp(char *str1, char *str2, uint32_t len)
+{
+	int i = 0;
+	for(i = 0; i < len; i++){
+		if(str1[i] != str2[i]){
+			return 0;
+		}
+	}
+	return 1;
+}
+
 void panic()
 {
 	printstr_log("PANIC");

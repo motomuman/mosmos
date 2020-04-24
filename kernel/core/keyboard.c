@@ -21,7 +21,7 @@ static char keytable[KEY_TABLE_SIZE] = {
 	//20
 	'd', 'f', 'g', 'h', 'j', 'k', 'l', 0, 0, 0, 0, 0, 'z', 'x', 'c', 'v',
 	//30
-	'b', 'n', 'm', 0, 0, 0, 0, 0, 0, ' '};
+	'b', 'n', 'm', 0, '.', 0, 0, 0, 0, ' '};
 
 #define KEY_BUF_LEN 1024
 

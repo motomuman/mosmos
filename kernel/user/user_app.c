@@ -8,6 +8,8 @@
 #include "dns.h"
 #include "lib.h"
 
+void exec_command(char *buf);
+
 void userland_main() {
 	int buf_pos;
 	while(1) {
@@ -23,14 +25,140 @@ void userland_main() {
 			tmp_buf[0] = ch;
 			tmp_buf[1] = 0;
 			sys_print_str(tmp_buf);
-
-			buf[buf_pos] = ch;
 			if(ch == 0x0a) {
 				break;
 			}
+			buf[buf_pos] = ch;
 			buf_pos++;
 		}
+		exec_command(buf);
+	}
+}
+
+uint32_t stoi(char *buf) {
+	uint32_t buflen = strlen(buf);
+	int i;
+	uint32_t ret = 0;
+
+	for(i = 0; i < buflen; i++) {
+		if(buf[i] < '0' || buf[i] > '9') {
+			//sys_print_str("ERROR: stoi can not handle non number\n");
+			return 0;
+		}
+		ret *= 10;
+		ret += buf[i] - '0';
+	}
+	return ret;
+}
+
+uint32_t parse_ipaddr(char *buf)
+{
+	int start = 0;
+	int end = 0;
+	uint32_t buf_len = strlen(buf);
+	char tmpbuf[100];
+	int dotcount = 0;
+	uint32_t ret = 0;
+
+	while(end < buf_len) {
+		end++;
+		if(buf[end] == '.') {
+			dotcount++;
+			//set block
+			memset(tmpbuf, 0, 100);
+			memcpy(tmpbuf, buf + start, end - start);
+			ret <<= 8;
+			ret += stoi(tmpbuf);
+			start = end + 1;
+			end = end + 1;
+		}
+	}
+
+	if(dotcount != 3) {
+		return 0;
+	}
+
+	// last block
+	memset(tmpbuf, 0, 100);
+	memcpy(tmpbuf, buf + start, end - start);
+	ret <<= 8;
+	ret += stoi(tmpbuf);
+	return ret;
+}
+
+void exec_ping(char *buf)
+{
+	uint32_t ipaddr = parse_ipaddr(buf);
+	int raw_sock = sys_raw_socket(IP_HDR_PROTO_ICMP);
+	int udp_sock = sys_udp_socket();
+	int seq = 0;
+
+	if(ipaddr == 0) {
+		ipaddr = resolve_addr(udp_sock, buf);
+	}
+
+	if(ipaddr == 0) {
+		return;
+	}
+
+	sys_print_str("PING ");
+	sys_print_str(buf);
+	sys_print_str(" (");
+	sys_print_num((ipaddr >> 24) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 16) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 8) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 0) &0xff);
+	sys_print_str(")\n");
+
+	for(seq = 0; seq < 5; seq++) {
+		uint8_t _buf[500];
+		uint8_t *buf = _buf;
+
+		struct icmp_hdr *icmphdr = (struct icmp_hdr *) buf;
+		icmphdr->type = ICMP_HDR_TYPE_ECHO_REQUEST;
+		icmphdr->code = 0;
+		icmphdr->checksum = 0;
+		icmphdr->echo.id = seq;
+		icmphdr->echo.seqnum = seq;
+
+		//set checksum
+		icmphdr->checksum = checksum(buf, sizeof(struct icmp_hdr));
+
+		sys_raw_socket_send(udp_sock, ipaddr, buf, sizeof(struct icmp_hdr), 64);
+
+		int ret = sys_raw_socket_recv(raw_sock, buf, sizeof(struct icmp_hdr) + sizeof(struct ip_hdr));
+
+		if(ret == -1) {
+			sys_print_str("timeout!\n");
+			continue;
+		}
+		struct ip_hdr *iphdr = (struct ip_hdr *)buf;
+		sys_print_str("seq=");
+		sys_print_num(seq);
+		sys_print_str(" ttl=");
+		sys_print_num(iphdr->ttl);
+		sys_print_str("\n");
+	}
+}
+
+
+
+void exec_command(char *buf)
+{
+	if(strncmp("ping ", buf, 5)) {
+		exec_ping(buf + 5);
+	} else if(strncmp("traceroute ", buf, 5)) {
+		sys_print_str("traceroute command\n");
+	} else if(strncmp("help", buf, 4)) {
+		sys_print_str("ping dest (ipaddr/hostname)\n");
+		sys_print_str("traceroute dest (ipaddr/hostname)\n");
+	} else {
+		sys_print_str("command not found: ");
 		sys_print_str(buf);
+		sys_print_str("\n");
 	}
 }
 
