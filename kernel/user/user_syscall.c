@@ -48,3 +48,8 @@ int sys_key_getc()
 {
 	return sys_call(9, 0, 0, 0, 0, 0);
 }
+
+uint64_t sys_get_tick()
+{
+	return sys_call(10, 0, 0, 0, 0, 0);
+}

@@ -10,6 +10,7 @@
 #define SYSCALL_UDP_SOCK_SEND 7
 #define SYSCALL_UDP_SOCK_RECV 8
 #define SYSCALL_KEY_GETC 9
+#define SYSCALL_GET_TICK 10
 
 void init_syscall();
 

@@ -170,7 +170,6 @@ void kstart(void)
 
 	netdev_set_netmask(24);
 
-	io_sti();
 
 	//set_timer(hello, NULL, 1000);
 	//set_timer(hello2, NULL, 3000);
@@ -186,6 +185,8 @@ void kstart(void)
 	task_run(task_c);
 
 	wq_set_receiver(task_a);
+
+	io_sti();
 
 	while(1){
 		io_cli();

@@ -21,6 +21,9 @@ void userland_main() {
 		while(1) {
 			char tmp_buf[2];
 			char ch = sys_key_getc();
+			if(ch == 0) {
+				continue;
+			}
 
 			tmp_buf[0] = ch;
 			tmp_buf[1] = 0;
@@ -118,29 +121,41 @@ void exec_ping(char *buf)
 		uint8_t *buf = _buf;
 
 		struct icmp_hdr *icmphdr = (struct icmp_hdr *) buf;
+		buf += sizeof(struct icmp_hdr);
 		icmphdr->type = ICMP_HDR_TYPE_ECHO_REQUEST;
 		icmphdr->code = 0;
 		icmphdr->checksum = 0;
 		icmphdr->echo.id = seq;
 		icmphdr->echo.seqnum = seq;
 
+		*(uint64_t *) buf = sys_get_tick();
+
+		buf -= sizeof(struct icmp_hdr);
+
 		//set checksum
-		icmphdr->checksum = checksum(buf, sizeof(struct icmp_hdr));
+		icmphdr->checksum = checksum(buf, sizeof(struct icmp_hdr) + 8);
 
-		sys_raw_socket_send(udp_sock, ipaddr, buf, sizeof(struct icmp_hdr), 64);
+		sys_raw_socket_send(udp_sock, ipaddr, buf, sizeof(struct icmp_hdr) + 8, 64);
 
-		int ret = sys_raw_socket_recv(raw_sock, buf, sizeof(struct icmp_hdr) + sizeof(struct ip_hdr));
+		int ret = sys_raw_socket_recv(raw_sock, buf, sizeof(struct icmp_hdr) + sizeof(struct ip_hdr) + 8);
 
 		if(ret == -1) {
 			sys_print_str("timeout!\n");
 			continue;
 		}
 		struct ip_hdr *iphdr = (struct ip_hdr *)buf;
+		buf += sizeof(struct ip_hdr) + sizeof(struct icmp_hdr);
+
+		uint64_t send_tick = *(uint64_t *) buf;
+		uint64_t recv_tick = sys_get_tick();
+
 		sys_print_str("seq=");
 		sys_print_num(seq);
 		sys_print_str(" ttl=");
 		sys_print_num(iphdr->ttl);
-		sys_print_str("\n");
+		sys_print_str(" time=");
+		sys_print_num(recv_tick - send_tick);
+		sys_print_str(" ms\n");
 	}
 }
 

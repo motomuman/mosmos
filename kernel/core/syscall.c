@@ -53,6 +53,10 @@ int syscall_key_getc() {
 	return key_getc();
 }
 
+int syscall_get_tick() {
+	return get_tick();
+}
+
 int syscall_handler(uint64_t rdi, uint64_t rsi,
 		uint64_t rdx, uint64_t rcx, uint64_t r8, uint64_t r9)
 {
@@ -76,6 +80,8 @@ int syscall_handler(uint64_t rdi, uint64_t rsi,
 			return syscall_udp_socket_recv(rsi, rdx, rcx);
 		case SYSCALL_KEY_GETC:
 			return syscall_key_getc();
+		case SYSCALL_GET_TICK:
+			return syscall_get_tick();
 		default:
 			printstr_log("unknown syscall rdi:");
 			printnum_log(rdi);

@@ -131,7 +131,7 @@ void printstr_app(char *str) {
 }
 
 void printstr_log(char *str) {
-	printstr(&logscreen, str);
+	//printstr(&logscreen, str);
 }
 
 void printnum(struct SCREEN *screen, uint32_t num) {
@@ -172,7 +172,7 @@ void printnum_app(int num) {
 }
 
 void printnum_log(int num) {
-	printnum(&logscreen, num);
+	//printnum(&logscreen, num);
 }
 
 void printhex(struct SCREEN *screen, uint64_t num) {
@@ -206,6 +206,6 @@ void printhex_app(int num) {
 }
 
 void printhex_log(int num) {
-	printhex(&logscreen, num);
+	//printhex(&logscreen, num);
 }
 

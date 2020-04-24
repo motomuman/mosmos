@@ -38,7 +38,7 @@ void set_timer(void (*func) (void *), void *arg, uint32_t time_msec)
 	struct timer_entry *new_timer = (struct timer_entry *)mem_alloc(sizeof(struct timer_entry), "set_timer");
 	new_timer->func = func;
 	new_timer->arg = arg;
-	new_timer->tick = tick + time_msec/10;
+	new_timer->tick = tick + time_msec;
 
 	struct timer_entry *prev_timer = (struct timer_entry *) list_head(&timer_list);
 	if(new_timer->tick < prev_timer->tick) {
@@ -64,14 +64,14 @@ void set_timer(void (*func) (void *), void *arg, uint32_t time_msec)
 void int_pit(int *esp) {
 	pic_sendeoi(PIT_IRQ);
 	tick++;
-	if(tick%200 == 0) {
+	//if(tick%10 == 0) {
 		printstr_log("int_pit, args addr ");
 		printhex_log((uint64_t) &esp);
 		printstr_log("\n");
 		printstr_log("task_switch ");
 		task_show();
 		task_switch();
-	}
+	//}
 
 	while(!list_empty(&timer_list) &&
 			((struct timer_entry*)list_head(&timer_list))->tick <= tick) {
@@ -83,6 +83,11 @@ void int_pit(int *esp) {
 	return;
 }
 
+uint64_t get_tick()
+{
+	return tick;
+}
+
 void init_pit()
 {
 	tick = 0;
@@ -91,9 +96,9 @@ void init_pit()
 	 */
 	io_out8(0x0043, 0b00110100);
 
-	//0x2e9c (11932) for 100Hz (interrupt every 10ms)
-	io_out8(0x0040, 0x9c); // lower 8 bit
-	io_out8(0x0040, 0x2e); // higher 8 bit
+	//0x04a9 (1193) for 1000Hz (interrupt every 1ms)
+	io_out8(0x0040, 0xa9); // lower 8 bit
+	io_out8(0x0040, 0x04); // higher 8 bit
 
 	register_interrupt(0, asm_int_pit);
 	return;
