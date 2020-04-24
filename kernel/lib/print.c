@@ -53,14 +53,14 @@ struct SCREEN monitorscreen;
 void initscreen() {
 	appscreen.startx = 0;
 	appscreen.starty = 0;
-	appscreen.width = 40;
+	appscreen.width = 55;
 	appscreen.height = 30;
 	appscreen.x = 0;
 	appscreen.y = 0;
 
-	logscreen.startx = 41;
+	logscreen.startx = 56;
 	logscreen.starty = 0;
-	logscreen.width = 39;
+	logscreen.width = 24;
 	logscreen.height = 30;
 	logscreen.x = 0;
 	logscreen.y = 0;
@@ -68,7 +68,7 @@ void initscreen() {
 	int width;
 	uint64_t p;
 	for(width = 0; width < 3; width++) {
-		for (p = 0xa0000 + 40 + 80 * width; p <= 0xaffff; p += 80 * 16) {
+		for (p = 0xa0000 + 55 + 80 * width; p <= 0xaffff; p += 80 * 16) {
 			*(uint8_t *) p = 0x10;
 		}
 	}

@@ -118,9 +118,9 @@ uint32_t resolve_addr(int sock, char *name)
 	 * response handling is not perfect, ignoring many cases.
 	 */
 	if(ntoh16(ansdns_hdr->qdcount) != 1){
-		sys_print_str("Can not handle dns response with non one qd count (");
-		sys_print_num(ntoh16(ansdns_hdr->qdcount));
-		sys_print_str(") \n");
+		//sys_print_str("Can not handle dns response with non one qd count (");
+		//sys_print_num(ntoh16(ansdns_hdr->qdcount));
+		//sys_print_str(") \n");
 		//mem_free(txbuf_head);
 		//mem_free(rxbuf_head);
 		return 0;
@@ -131,7 +131,7 @@ uint32_t resolve_addr(int sock, char *name)
 	rxbuf += qsection_len;
 
 	if(*rxbuf != 0xc0){
-		sys_print_str("Can not handle dns response not using offset\n");
+		//sys_print_str("Can not handle dns response not using offset\n");
 		//mem_free(txbuf_head);
 		//mem_free(rxbuf_head);
 		return 0;
@@ -142,7 +142,7 @@ uint32_t resolve_addr(int sock, char *name)
 
 	uint16_t *length = (uint16_t *) (rxbuf);
 	if(ntoh16(*length) != 4){
-		sys_print_str("Can not handle dns response with non 4 length\n");
+		//sys_print_str("Can not handle dns response with non 4 length\n");
 		//mem_free(txbuf_head);
 		//mem_free(rxbuf_head);
 		return 0;
@@ -258,7 +258,7 @@ int resolve_host(int sock, uint32_t ip, char *buf, int buflen)
 
 	int ret = sys_udp_socket_recv(sock, rxbuf, 500);
 	if(ret == -1) {
-		sys_print_str("udp_socket_recv: TIMEOUT\n");
+		//sys_print_str("udp_socket_recv: TIMEOUT\n");
 		//mem_free(txbuf_head);
 		//mem_free(rxbuf_head);
 		return -1;
@@ -271,16 +271,16 @@ int resolve_host(int sock, uint32_t ip, char *buf, int buflen)
 	 * response handling is not perfect, ignoring many cases.
 	 */
 	if(ntoh16(ansdns_hdr->qdcount) != 1){
-		sys_print_str("Can not handle dns response with non one qd count (");
-		sys_print_num(ntoh16(ansdns_hdr->qdcount));
-		sys_print_str(") \n");
+		//sys_print_str("Can not handle dns response with non one qd count (");
+		//sys_print_num(ntoh16(ansdns_hdr->qdcount));
+		//sys_print_str(") \n");
 		//mem_free(txbuf_head);
 		//mem_free(rxbuf_head);
 		return -1;
 	}
 
 	if(ntoh16(ansdns_hdr->ancount) == 0){
-		sys_print_str("Can not handle dns response with zero ancount\n");
+		//sys_print_str("Can not handle dns response with zero ancount\n");
 		//mem_free(txbuf_head);
 		//mem_free(rxbuf_head);
 		return -1;
@@ -291,7 +291,7 @@ int resolve_host(int sock, uint32_t ip, char *buf, int buflen)
 	rxbuf += qsection_len;
 
 	if(rxbuf[0] != 0xc0){
-		sys_print_str("Can not handle dns response not using offset\n");
+		//sys_print_str("Can not handle dns response not using offset\n");
 		//mem_free(txbuf_head);
 		//mem_free(rxbuf_head);
 		return -1;
@@ -302,7 +302,7 @@ int resolve_host(int sock, uint32_t ip, char *buf, int buflen)
 	while(count) {
 		count--;
 		if(*rxbuf != 0xc0){
-			sys_print_str("Can not handle dns response not using offset\n");
+			//sys_print_str("Can not handle dns response not using offset\n");
 			//mem_free(txbuf_head);
 			//mem_free(rxbuf_head);
 			return -1;

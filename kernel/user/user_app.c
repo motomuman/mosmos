@@ -159,14 +159,114 @@ void exec_ping(char *buf)
 	}
 }
 
+void exec_traceroute(char *buf)
+{
+	uint32_t ipaddr = parse_ipaddr(buf);
+	int raw_sock = sys_raw_socket(IP_HDR_PROTO_ICMP);
+	int udp_sock = sys_udp_socket();
+	int ttl;
+
+	if(ipaddr == 0) {
+		ipaddr = resolve_addr(udp_sock, buf);
+	}
+
+	if(ipaddr == 0) {
+		return;
+	}
+
+	sys_print_str("traceroute to ");
+	sys_print_str(buf);
+	sys_print_str(" (");
+	sys_print_num((ipaddr >> 24) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 16) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 8) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 0) &0xff);
+	sys_print_str(")\n");
+
+	for(ttl = 1; ttl < 20; ttl++) {
+		uint8_t _buf[500];
+		uint8_t *buf = _buf;
+
+		struct icmp_hdr *icmphdr = (struct icmp_hdr *) buf;
+		buf += sizeof(struct icmp_hdr);
+		icmphdr->type = ICMP_HDR_TYPE_ECHO_REQUEST;
+		icmphdr->code = 0;
+		icmphdr->checksum = 0;
+		icmphdr->echo.id = ttl;
+		icmphdr->echo.seqnum = ttl;
+
+		uint64_t send_tick = sys_get_tick();
+
+		buf -= sizeof(struct icmp_hdr);
+
+		//set checksum
+		icmphdr->checksum = checksum(buf, sizeof(struct icmp_hdr));
+
+		sys_raw_socket_send(udp_sock, ipaddr, buf, sizeof(struct icmp_hdr), ttl);
+
+		int ret = sys_raw_socket_recv(raw_sock, buf, sizeof(struct icmp_hdr) + sizeof(struct ip_hdr));
+
+		if(ret == -1) {
+			sys_print_num(ttl);
+			sys_print_str(" timeout!\n");
+			continue;
+		}
+		struct ip_hdr *iphdr = (struct ip_hdr *)buf;
+		buf += sizeof(struct ip_hdr);
+		icmphdr = (struct icmp_hdr *)buf;
+		buf += sizeof(struct icmp_hdr);
+
+		uint64_t recv_tick = sys_get_tick();
+
+		char domainbuf[200];
+		memset(domainbuf, 0, 200);
+		ret = resolve_host(udp_sock, ntoh32(iphdr->sip) , domainbuf, 200);
+
+		sys_print_num(ttl);
+		sys_print_str(" ");
+		if(ret != -1){
+			printstr_app(domainbuf);
+			sys_print_str(domainbuf);
+			sys_print_str("(");
+			sys_print_num((ntoh32(iphdr->sip) >> 24) &0xff);
+			sys_print_str(".");
+			sys_print_num((ntoh32(iphdr->sip) >> 16) &0xff);
+			sys_print_str(".");
+			sys_print_num((ntoh32(iphdr->sip) >> 8) &0xff);
+			sys_print_str(".");
+			sys_print_num((ntoh32(iphdr->sip)) &0xff);
+			sys_print_str(") ");
+		} else {
+			sys_print_num((ntoh32(iphdr->sip) >> 24) &0xff);
+			sys_print_str(".");
+			sys_print_num((ntoh32(iphdr->sip) >> 16) &0xff);
+			sys_print_str(".");
+			sys_print_num((ntoh32(iphdr->sip) >> 8) &0xff);
+			sys_print_str(".");
+			sys_print_num((ntoh32(iphdr->sip)) &0xff);
+			sys_print_str(" ");
+		}
+
+		sys_print_num(recv_tick - send_tick);
+		sys_print_str(" ms\n");
+
+		if(icmphdr->type == ICMP_HDR_TYPE_ECHO_REPLY) {
+			return;
+		}
+	}
+}
+
 
 
 void exec_command(char *buf)
 {
 	if(strncmp("ping ", buf, 5)) {
 		exec_ping(buf + 5);
-	} else if(strncmp("traceroute ", buf, 5)) {
-		sys_print_str("traceroute command\n");
+	} else if(strncmp("traceroute ", buf, 11)) {
+		exec_traceroute(buf + 11);
 	} else if(strncmp("help", buf, 4)) {
 		sys_print_str("ping dest (ipaddr/hostname)\n");
 		sys_print_str("traceroute dest (ipaddr/hostname)\n");
