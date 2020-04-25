@@ -6,6 +6,5 @@
 void mem_init();
 void mem_free(void* _addr);
 uint64_t mem_alloc(uint32_t size, char *name);
-int mem_free_size();
 
 #endif

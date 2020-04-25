@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "print.h"
+#include "asm.h"
 
 // width: 640 bit, height: 480 bit. Each row has 80 bytes (640 bits)
 //
@@ -99,6 +100,9 @@ void fixpos(struct SCREEN *screen) {
 }
 
 void putchar(struct SCREEN *screen, char ch) {
+	uint64_t rflags = get_rflags();
+	io_cli();
+
 	if(ch == '\n') {
 		screen->x = 0;
 		screen->y++;
@@ -117,6 +121,8 @@ void putchar(struct SCREEN *screen, char ch) {
 		screen->x++;
 	}
 	fixpos(screen);
+
+	set_rflags(rflags);
 }
 
 void printstr(struct SCREEN *screen, char *str) {
@@ -131,7 +137,7 @@ void printstr_app(char *str) {
 }
 
 void printstr_log(char *str) {
-	//printstr(&logscreen, str);
+	printstr(&logscreen, str);
 }
 
 void printnum(struct SCREEN *screen, uint32_t num) {
@@ -172,7 +178,7 @@ void printnum_app(int num) {
 }
 
 void printnum_log(int num) {
-	//printnum(&logscreen, num);
+	printnum(&logscreen, num);
 }
 
 void printhex(struct SCREEN *screen, uint64_t num) {
@@ -206,6 +212,6 @@ void printhex_app(int num) {
 }
 
 void printhex_log(int num) {
-	//printhex(&logscreen, num);
+	printhex(&logscreen, num);
 }
 

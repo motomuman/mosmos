@@ -10,6 +10,7 @@
 #include "task.h"
 #include "workqueue.h"
 #include "timer.h"
+#include "asm.h"
 
 #define NULL 0
 
@@ -180,6 +181,9 @@ void udp_rx(struct pktbuf *pkt)
 	pkt->buf += sizeof(struct udp_hdr);
 
 	int i;
+	uint64_t rflags = get_rflags();
+	io_cli();
+
 	for(i = 0; i < UDP_SOCKET_COUNT; i++){
 		if(udp_sockets[i].flag == UDP_SOCKET_USED && udp_sockets[i].port == ntoh16(udphdr->dport)) {
 			// copy pkt data
@@ -196,4 +200,5 @@ void udp_rx(struct pktbuf *pkt)
 			task_wakeup(&udp_sockets[i]);
 		}
 	}
+	set_rflags(rflags);
 }

@@ -93,13 +93,10 @@ struct TASK *task_start(void (*func)(), int priority, int is_userland)
     return task;
 }
 
-struct TASK *current_task()
-{
-	return taskctl.current_task;
-}
-
 void task_wakeup(void * cause) {
 	int i;
+	uint64_t rflags = get_rflags();
+	io_cli();
 	for(i = 0; i < taskctl.next_task_id; i++) {
 		struct TASK *task = &taskctl.tasks[i];
 		if(task->waitcause == cause && task->flag != TASK_RUNNING) {
@@ -107,13 +104,17 @@ void task_wakeup(void * cause) {
 			list_pushback(&taskctl.lists[task->priority], &task->link);
 		}
 	}
+	set_rflags(rflags);
 }
 
 void task_sleep(void *cause)
 {
-       taskctl.current_task->flag = TASK_WAITING;
-       taskctl.current_task->waitcause = cause;
-       task_switch();
+	uint64_t rflags = get_rflags();
+	io_cli();
+	taskctl.current_task->flag = TASK_WAITING;
+	taskctl.current_task->waitcause = cause;
+	task_switch();
+	set_rflags(rflags);
 }
 
 /*
@@ -138,13 +139,6 @@ uint64_t** schedule() {
 		}
 		rsp[0] = &current_task->rsp;
 		rsp[1] = &next_task->rsp;
-
-		//printstr_app("shedule:");
-		//printnum_app(current_task->task_id);
-		//printstr_app(" -> ");
-		//printnum_app(next_task->task_id);
-		//printstr_app("\n");
-		//task_show();
 
 		taskctl.current_task = next_task;
 	}

@@ -31,8 +31,6 @@ int key_buf_write;
 int key_buf_size;
 int key_cond;
 
-struct TASK *receiver;
-
 int key_buf_empty()
 {
 	return key_buf_size == 0;
@@ -85,7 +83,6 @@ void int_keyboard() {
 uint8_t key_getc()
 {
 	if(key_buf_empty()) {
-		receiver = current_task();
 		task_sleep(&key_cond);
 	}
 
@@ -98,6 +95,5 @@ void init_keyboard()
 	key_buf_read = 0;
 	key_buf_write = 0;
 	key_buf_size = 0;
-	receiver = NULL;
 	return;
 }

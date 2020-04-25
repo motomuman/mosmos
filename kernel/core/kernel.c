@@ -22,24 +22,11 @@
 #include "user_app.h"
 #include "keyboard.h"
 
-#define NULL 0
-
 void task_idle_main() {
 	while(1) {
 		io_hlt();
 	}
 }
-
-void hello() {
-	printstr_app("Hello Timer\n");
-	set_timer(hello, NULL, 1000);
-}
-
-void hello2() {
-	printstr_app("Hello Timer2\n");
-	set_timer(hello2, NULL, 2000);
-}
-
 
 void kstart(void)
 {
@@ -71,13 +58,7 @@ void kstart(void)
 
 	netdev_set_netmask(24);
 
-
-	//set_timer(hello, NULL, 1000);
-	//set_timer(hello2, NULL, 3000);
-
-	struct TASK *task_kernel;
-
-	task_kernel = task_init();
+	task_init();
 	task_start(userland_main, TASK_PRIORITY_HIGH, 1);
 	task_start(task_idle_main, TASK_PRIORITY_LOW, 0);
 

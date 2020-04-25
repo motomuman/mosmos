@@ -1,6 +1,7 @@
 #include "memory.h"
 #include "print.h"
 #include "lib.h"
+#include "asm.h"
 
 #define MEM_TABLE_SIZE 2000
 
@@ -65,6 +66,9 @@ void show_alloced_mem() {
 
 void mem_free(void *_addr) {
 	uint64_t addr = (uint64_t) _addr;
+	uint64_t rflags = get_rflags();
+	io_cli();
+
 	if(freemem.len >= MEM_TABLE_SIZE - 1) {
 		printstr_log("INVALID MEM FREE ERROR\n");
 		panic();
@@ -79,21 +83,17 @@ void mem_free(void *_addr) {
 	}
 	entry->mem_flag = MEM_FREE_FLAG;
 
-	//printstr_log("Mem Free ");
-	//printstr_log(entry->name);
-	//printstr_log(" ");
-	//printhex_log(addr);
-	//printstr_log(" (");
-	//printnum_log(freemem.len);
-	//printstr_log(")");
-	//printstr_log("\n");
-
 	freemem.addr[freemem.len] = addr - sizeof(struct memhdr);
 	freemem.len++;
+
+	set_rflags(rflags);
 	return;
 }
 
 uint64_t mem_alloc(uint32_t size, char *name) {
+	uint64_t rflags = get_rflags();
+	io_cli();
+
 	if (size > MEM_GRANULARITY) {
 		printstr_log("ERROR: large memory req ");
 		printstr_log(name);
@@ -115,15 +115,6 @@ uint64_t mem_alloc(uint32_t size, char *name) {
 	uint64_t addr = freemem.addr[freemem.len];
 	struct memhdr *entry = (struct memhdr *)(addr);
 
-	//printstr_log("Mem Alloc ");
-	//printstr_log(name);
-	//printstr_log(" ");
-	//printhex_log(addr);
-	//printstr_log(" (");
-	//printnum_log(freemem.len);
-	//printstr_log(")");
-	//printstr_log("\n");
-
 	if(entry->mem_flag != MEM_FREE_FLAG) {
 		printstr_log("ERROR: Tried to allocate invalid address\n");
 		panic();
@@ -132,9 +123,6 @@ uint64_t mem_alloc(uint32_t size, char *name) {
 	entry->mem_flag = MEM_USED_FLAG;
 	strncpy(entry->name, name, MAX_MEM_NAME);
 
+	set_rflags(rflags);
 	return entry->start;
-}
-
-int mem_free_size() {
-	return freemem.len;
 }

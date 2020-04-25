@@ -12,6 +12,8 @@ global _load_idtr
 global _load_gdtr
 global _load_tr
 global _task_switch
+global _get_rflags
+global _set_rflags
 
 extern _schedule
 
@@ -103,6 +105,11 @@ _test_and_set:
 _get_rflags:
 	pushfq
 	pop	rax
+	ret
+
+_set_rflags:
+	push	rdi
+	popfq
 	ret
 
 _task_switch:

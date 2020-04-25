@@ -8,6 +8,7 @@
 #include "task.h"
 #include "workqueue.h"
 #include "timer.h"
+#include "asm.h"
 
 #define RAW_SOCKET_FREE	0
 #define RAW_SOCKET_USED	1
@@ -146,6 +147,8 @@ int raw_socket_recv(int socket_id, uint8_t *buf, int size)
 void raw_recv(struct pktbuf *pkt, uint8_t proto)
 {
 	int i;
+	uint64_t rflags = get_rflags();
+	io_cli();
 	for(i = 0; i < RAW_SOCKET_COUNT; i++){
 		if(raw_sockets[i].flag == RAW_SOCKET_USED && raw_sockets[i].proto == proto) {
 			// copy pkt data
@@ -162,4 +165,5 @@ void raw_recv(struct pktbuf *pkt, uint8_t proto)
 			task_wakeup(&raw_sockets[i]);
 		}
 	}
+	set_rflags(rflags);
 }

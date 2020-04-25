@@ -228,7 +228,6 @@ void exec_traceroute(char *buf)
 		sys_print_num(ttl);
 		sys_print_str(" ");
 		if(ret != -1){
-			printstr_app(domainbuf);
 			sys_print_str(domainbuf);
 			sys_print_str("(");
 			sys_print_num((ntoh32(iphdr->sip) >> 24) &0xff);

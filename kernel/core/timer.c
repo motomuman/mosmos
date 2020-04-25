@@ -13,25 +13,10 @@ struct timer_entry {
 	void (*func) (void *);
 	void *arg;
 };
-//
+
 struct listctl timer_list;
 uint32_t tick;
-//
-//void show_timer()
-//{
-//	struct timer_entry *timer;
-//
-//	printstr_app("cur t: ");
-//	for(timer = (struct timer_entry *) list_head(&timer_list); timer != NULL; timer = (struct timer_entry *)list_next(&timer->link)) {
-//		printnum_app(timer->tick);
-//		printstr_app("(");
-//		printhex_app((uint32_t)timer);
-//		printstr_app(")");
-//		printstr_app(":");
-//	}
-//	printstr_app("\n");
-//}
-//
+
 // O(n)
 void set_timer(void (*func) (void *), void *arg, uint32_t time_msec)
 {
@@ -40,9 +25,13 @@ void set_timer(void (*func) (void *), void *arg, uint32_t time_msec)
 	new_timer->arg = arg;
 	new_timer->tick = tick + time_msec;
 
+	uint64_t rflags = get_rflags();
+	io_cli();
+
 	struct timer_entry *prev_timer = (struct timer_entry *) list_head(&timer_list);
 	if(new_timer->tick < prev_timer->tick) {
 		list_pushfront(&timer_list, &new_timer->link);
+		set_rflags(rflags);
 		return;
 	}
 
@@ -55,6 +44,8 @@ void set_timer(void (*func) (void *), void *arg, uint32_t time_msec)
 	}
 
 	list_insert(&timer_list, &prev_timer->link, &new_timer->link);
+
+	set_rflags(rflags);
 
 	return;
 }
