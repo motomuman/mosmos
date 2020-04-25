@@ -46,15 +46,19 @@ struct TASKCTL taskctl;
 struct TASK *task_init()
 {
 	taskctl.next_task_id = 0;
-	list_init(&taskctl.list);
+	list_init(&taskctl.lists[TASK_PRIORITY_LOW]);
+	list_init(&taskctl.lists[TASK_PRIORITY_HIGH]);
 
 	struct TASK *initial_task = &taskctl.tasks[taskctl.next_task_id];
+	initial_task->priority = TASK_PRIORITY_HIGH;
+	initial_task->flag = TASK_RUNNING;
+
 	taskctl.next_task_id++;
-	task_run(initial_task);
+	taskctl.current_task = initial_task;
 	return initial_task;
 }
 
-struct TASK *task_alloc(void (*func)())
+struct TASK *task_alloc(void (*func)(), int priority, int is_userland)
 {
     struct TASK *task = &taskctl.tasks[taskctl.next_task_id];
     uint64_t stack = mem_alloc(STACK_LENGTH * 8, "stack");
@@ -62,6 +66,7 @@ struct TASK *task_alloc(void (*func)())
     task->rip = (uint64_t)func;
     task->flag = TASK_INITIALIZED;
     task->task_id = taskctl.next_task_id;
+    task->priority = priority;
     taskctl.next_task_id++;
 
     // Initialize stack
@@ -70,10 +75,17 @@ struct TASK *task_alloc(void (*func)())
 
     sf->sp = task->rsp - STACK_LENGTH/2;
     sf->ip = task->rip;
-    sf->cs = 24 + 3;
-    sf->ss = 32 + 3;
-    sf->fs = 32 + 3;
-    sf->gs = 32 + 3;
+    if(is_userland) {
+	    sf->cs = 24 + 3;
+	    sf->ss = 32 + 3;
+	    sf->fs = 32 + 3;
+	    sf->gs = 32 + 3;
+    } else {
+	    sf->cs = 8;
+	    sf->ss = 16;
+	    sf->fs = 16;
+	    sf->gs = 16;
+    }
     sf->flags = 0x202;
     task->rsp = task->rsp - sizeof(struct stackframe64);
 
@@ -82,7 +94,7 @@ struct TASK *task_alloc(void (*func)())
 
 struct TASK *current_task()
 {
-	return (struct TASK *) list_head(&taskctl.list);
+	return taskctl.current_task;
 }
 
 void task_run(struct TASK *new_task) {
@@ -91,21 +103,12 @@ void task_run(struct TASK *new_task) {
 		return;
 	}
 	new_task->flag = TASK_RUNNING;
-	list_pushback(&taskctl.list, &new_task->link);
+	list_pushback(&taskctl.lists[new_task->priority], &new_task->link);
 }
 
 void task_sleep()
 {
-       // can not sleep if no running task or only one task is running
-       struct TASK *current_task = (struct TASK *) list_head(&taskctl.list);
-       //printstr_log("task_sleep: ");
-       //printnum_log(current_task->task_id);
-       //printstr_log("\n");
-       //task_show();
-       if(current_task == NULL || list_next(&current_task->link) == NULL) {
-               return;
-       }
-       current_task->flag = TASK_WAITING;
+       taskctl.current_task->flag = TASK_WAITING;
        task_switch();
 }
 
@@ -117,21 +120,29 @@ void task_sleep()
 uint64_t *rsp[2];
 uint64_t** schedule() {
 	memset(rsp, 0, 2*sizeof(uint64_t));
-	struct TASK *current_task = (struct TASK *) list_head(&taskctl.list);
-	struct TASK *next_task = (struct TASK *)list_next(&current_task->link);
-	if(next_task != NULL) {
-		list_popfront(&taskctl.list);
-		if (current_task->flag != TASK_WAITING) {
-			list_pushback(&taskctl.list, &current_task->link);
-		}
-		printstr_log("shedule:");
-		printnum_log(current_task->task_id);
-		printstr_log(" -> ");
-		printnum_log(next_task->task_id);
-		printstr_log("\n");
+	struct TASK *current_task = taskctl.current_task;
+	struct TASK *next_task = (struct TASK *) list_popfront(&taskctl.lists[TASK_PRIORITY_HIGH]);
 
+	if(next_task == NULL &&
+			(current_task->flag == TASK_WAITING || current_task->priority == TASK_PRIORITY_LOW)) {
+		next_task = (struct TASK *) list_popfront(&taskctl.lists[TASK_PRIORITY_LOW]);
+	}
+
+	if(next_task != NULL) {
+		if (current_task->flag != TASK_WAITING) {
+			list_pushback(&taskctl.lists[current_task->priority], &current_task->link);
+		}
 		rsp[0] = &current_task->rsp;
 		rsp[1] = &next_task->rsp;
+
+		//printstr_app("shedule:");
+		//printnum_app(current_task->task_id);
+		//printstr_app(" -> ");
+		//printnum_app(next_task->task_id);
+		//printstr_app("\n");
+		//task_show();
+
+		taskctl.current_task = next_task;
 	}
 	return rsp;
 }
@@ -139,11 +150,18 @@ uint64_t** schedule() {
 void task_show()
 {
 	struct TASK *task;
-	for(task = (struct TASK *) list_head(&taskctl.list); task != NULL; task = (struct TASK *)list_next(&task->link)) {
-		printnum_log(task->task_id);
-		printstr_log(" -> ");
+	printstr_app("Current ");
+	printnum_app(taskctl.current_task->task_id);
+	printstr_app(": High prio");
+	for(task = (struct TASK *) list_head(&taskctl.lists[TASK_PRIORITY_HIGH]); task != NULL; task = (struct TASK *)list_next(&task->link)) {
+		printnum_app(task->task_id);
+		printstr_app(" -> ");
 	}
-	printstr_log("\n");
+
+	printstr_app(": Low prio");
+	for(task = (struct TASK *) list_head(&taskctl.lists[TASK_PRIORITY_LOW]); task != NULL; task = (struct TASK *)list_next(&task->link)) {
+		printnum_app(task->task_id);
+		printstr_app(" -> ");
+	}
+	printstr_app("\n");
 }
-
-

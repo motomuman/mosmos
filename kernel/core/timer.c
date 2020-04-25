@@ -64,14 +64,11 @@ void set_timer(void (*func) (void *), void *arg, uint32_t time_msec)
 void int_pit(int *esp) {
 	pic_sendeoi(PIT_IRQ);
 	tick++;
-	//if(tick%10 == 0) {
-		printstr_log("int_pit, args addr ");
-		printhex_log((uint64_t) &esp);
-		printstr_log("\n");
-		printstr_log("task_switch ");
-		task_show();
+	if(tick%10 == 0) {
+		//printstr_app("task_switch ");
+		//task_show();
 		task_switch();
-	//}
+	}
 
 	while(!list_empty(&timer_list) &&
 			((struct timer_entry*)list_head(&timer_list))->tick <= tick) {

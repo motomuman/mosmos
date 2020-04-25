@@ -24,108 +24,9 @@
 
 #define NULL 0
 
-void task_ping_main() {
-	int i;
-	int ttl = 1;
-
-	int udp_sock = udp_socket();
-
-	uint8_t *buf = (uint8_t*) mem_alloc(sizeof(struct icmp_hdr) + sizeof(struct ip_hdr), "icmphdr");
+void task_idle_main() {
 	while(1) {
-		for(i = 0; i < 100000000; i++){
-		}
-		int sock = raw_socket(IP_HDR_PROTO_ICMP);
-
-		struct icmp_hdr *icmphdr = (struct icmp_hdr *) buf;
-		icmphdr->type = ICMP_HDR_TYPE_ECHO_REQUEST;
-		icmphdr->code = 0;
-		icmphdr->checksum = 0;
-		icmphdr->echo.id = 7777;
-		icmphdr->echo.seqnum = 0;
-
-		//set checksum
-		icmphdr->checksum = checksum(buf, sizeof(struct icmp_hdr));
-
-		uint32_t dip = (8 << 24) | (8 << 16) | (8 << 8) | 8;
-		raw_socket_send(sock, dip, buf, sizeof(struct icmp_hdr), ttl);
-
-		int ret = raw_socket_recv(sock, buf, sizeof(struct icmp_hdr) + sizeof(struct ip_hdr));
-		if(ret == -1) {
-			printstr_app("TIMEOUT!!!!\n");
-			raw_socket_free(sock);
-			continue;
-		}
-		printstr_app("TTL: ");
-		printnum_app(ttl);
-		printstr_app("\n");
-		ttl++;
-		struct ip_hdr *iphdr = (struct ip_hdr *)buf;
-		printstr_app("src: ");
-		printnum_app((ntoh32(iphdr->sip) >> 24) &0xff);
-		printstr_app(".");
-		printnum_app((ntoh32(iphdr->sip) >> 16) &0xff);
-		printstr_app(".");
-		printnum_app((ntoh32(iphdr->sip) >> 8) &0xff);
-		printstr_app(".");
-		printnum_app((ntoh32(iphdr->sip)) &0xff);
-
-		char domainbuf[200];
-		ret = resolve_host(udp_sock, ntoh32(iphdr->sip) , domainbuf, 200);
-		if(ret != -1){
-			printstr_app(" (");
-			printstr_app(domainbuf);
-			printstr_app(")\n");
-		} else {
-			printstr_app("\n");
-		}
-
-		buf += sizeof(struct ip_hdr);
-		icmphdr = (struct icmp_hdr *)buf;
-		if(icmphdr->type == ICMP_HDR_TYPE_ECHO_REPLY) {
-			printstr_app("ICMP_HDR_TYPE_ECHO_REPLY\n");
-		} else if(icmphdr->type == ICMP_HDR_TYPE_ECHO_REQUEST) {
-			printstr_app("ICMP_HDR_TYPE_ECHO_REQUEST\n");
-		} else if (icmphdr->type ==  ICMP_HDR_TYPE_TIME_EXCEEDED){
-			printstr_app("ICMP_HDR_TYPE_TIME_EXCEEDED\n");
-		}else{
-			printstr_app("ICMP_HDR_TYPE_ECHO_INVALID\n");
-		}
-
-		buf -= sizeof(struct ip_hdr);
-
-		raw_socket_free(sock);
-	}
-}
-
-void task_b_main() {
-	int i;
-	int sock = udp_socket();
-	char buf[200];
-
-	while(1) {
-		for(i = 0; i < 200000000; i++){
-		}
-
-		uint32_t ip = resolve_addr(sock, "www.hongo.wide.ad.jp");
-		if(ip != 0) {
-			printstr_app("task_b: resolved ip ");
-			printnum_app((ip>>24)&0xff);
-			printstr_app(".");
-			printnum_app((ip>>16)&0xff);
-			printstr_app(".");
-			printnum_app((ip>>8)&0xff);
-			printstr_app(".");
-			printnum_app((ip>>0)&0xff);
-			printstr_app("\n");
-		}
-
-		memset(buf, 0, 100);
-		int ret = resolve_host(sock, ((203 << 24) + (178 << 16) + (135 << 8) + 39), buf, 200);
-		if(ret != -1){
-			printstr_app("task_b: resolved host ");
-			printstr_app(buf);
-			printstr_app("\n");
-		}
+		io_hlt();
 	}
 }
 
@@ -174,24 +75,24 @@ void kstart(void)
 	//set_timer(hello, NULL, 1000);
 	//set_timer(hello2, NULL, 3000);
 
-	struct TASK *task_a;
-	//struct TASK *task_b;
-	struct TASK *task_c;
-	task_a = task_init();
-	//task_b = task_alloc(task_ping_main);
-	//task_run(task_b);
+	struct TASK *task_kernel;
+	struct TASK *task_user;
+	struct TASK *task_idle;
 
-	task_c = task_alloc(userland_main);
-	task_run(task_c);
+	task_kernel = task_init();
+	task_user = task_alloc(userland_main, TASK_PRIORITY_HIGH, 1);
+	task_run(task_user);
+	task_idle = task_alloc(task_idle_main, TASK_PRIORITY_LOW, 0);
+	task_run(task_idle);
 
-	wq_set_receiver(task_a);
+	wq_set_receiver(task_kernel);
 
 	io_sti();
 
 	while(1){
 		io_cli();
 		if(wq_empty()) {
-			//task_sleep();
+			task_sleep();
 			io_sti();
 		} else {
 			io_sti();
