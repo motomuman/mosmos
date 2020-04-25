@@ -39,6 +39,8 @@
 // |                   |                  | 29
 // +-------------------+------------------+
 
+#define APPSCREEN_WIDTH 50
+
 uint64_t FONT_ADR;
 
 struct SCREEN {
@@ -54,14 +56,14 @@ struct SCREEN monitorscreen;
 void initscreen() {
 	appscreen.startx = 0;
 	appscreen.starty = 0;
-	appscreen.width = 55;
+	appscreen.width = APPSCREEN_WIDTH;
 	appscreen.height = 30;
 	appscreen.x = 0;
 	appscreen.y = 0;
 
-	logscreen.startx = 56;
+	logscreen.startx = APPSCREEN_WIDTH + 1;
 	logscreen.starty = 0;
-	logscreen.width = 24;
+	logscreen.width = 80 - APPSCREEN_WIDTH - 1;
 	logscreen.height = 30;
 	logscreen.x = 0;
 	logscreen.y = 0;
@@ -69,7 +71,7 @@ void initscreen() {
 	int width;
 	uint64_t p;
 	for(width = 0; width < 3; width++) {
-		for (p = 0xa0000 + 55 + 80 * width; p <= 0xaffff; p += 80 * 16) {
+		for (p = 0xa0000 + APPSCREEN_WIDTH + 80 * width; p <= 0xaffff; p += 80 * 16) {
 			*(uint8_t *) p = 0x10;
 		}
 	}
