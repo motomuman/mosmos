@@ -19,7 +19,6 @@ struct raw_rx_data {
 
 struct raw_socket {
 	struct listctl rx_data_list;
-	struct TASK *receiver;
 	int wait_id;
 	uint8_t proto;
 	uint8_t flag;
@@ -45,7 +44,6 @@ int raw_socket(uint8_t proto)
 		if(raw_sockets[i].flag == RAW_SOCKET_FREE) {
 			raw_sockets[i].wait_id = 0;
 			raw_sockets[i].proto = proto;
-			raw_sockets[i].receiver = current_task();
 			raw_sockets[i].flag = RAW_SOCKET_USED;
 			return i;
 		}
@@ -110,9 +108,8 @@ void raw_socket_recv_timeout(void *_args)
 	int wait_id = args[1];
 	struct raw_socket *socket = &raw_sockets[socket_id];
 	if(socket->flag == RAW_SOCKET_USED
-			&& socket->wait_id == wait_id
-			&& socket->receiver != NULL){
-		task_run(socket->receiver);
+			&& socket->wait_id == wait_id) {
+		task_wakeup(socket);
 	}
 	mem_free(args);
 }
@@ -132,7 +129,7 @@ int raw_socket_recv(int socket_id, uint8_t *buf, int size)
 		args[0] = socket_id;
 		args[1] = socket->wait_id;
 		wq_push_with_delay(raw_socket_recv_timeout, args, 5000);
-		task_sleep();
+		task_sleep(socket);
 	}
 	
 	// timeout
@@ -162,9 +159,7 @@ void raw_recv(struct pktbuf *pkt, uint8_t proto)
 			memcpy(data, pkt->buf, data_len);
 
 			list_pushback(&raw_sockets[i].rx_data_list, &rx_data->link);
-			if(raw_sockets[i].receiver != NULL) {
-				task_run(raw_sockets[i].receiver);
-			}
+			task_wakeup(&raw_sockets[i]);
 		}
 	}
 }

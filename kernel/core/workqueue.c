@@ -7,6 +7,7 @@
 struct workqueue {
 	struct listctl list;
 	struct TASK *receiver_task;
+	int cond;
 };
 
 struct work_task {
@@ -35,9 +36,7 @@ void wq_push(void (*func) (void *), void *arg)
 	task->func = func;
 	task->arg = arg;
 	list_pushback(&wq.list, &task->link);
-	if(wq.receiver_task != NULL) {
-		task_run(wq.receiver_task);
-	}
+	task_wakeup(&wq);
 	return;
 }
 
@@ -45,9 +44,7 @@ void wq_push_timer_func(void *_task)
 {
 	struct work_task *task = (struct work_task *) _task;
 	list_pushback(&wq.list, &task->link);
-	if(wq.receiver_task != NULL) {
-		task_run(wq.receiver_task);
-	}
+	task_wakeup(&wq);
 	return;
 }
 
@@ -72,4 +69,9 @@ void wq_execute()
 int wq_empty()
 {
 	return list_empty(&wq.list);
+}
+
+void *wq_cond()
+{
+	return &wq;
 }

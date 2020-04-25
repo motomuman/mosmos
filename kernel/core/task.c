@@ -58,13 +58,13 @@ struct TASK *task_init()
 	return initial_task;
 }
 
-struct TASK *task_alloc(void (*func)(), int priority, int is_userland)
+struct TASK *task_start(void (*func)(), int priority, int is_userland)
 {
     struct TASK *task = &taskctl.tasks[taskctl.next_task_id];
     uint64_t stack = mem_alloc(STACK_LENGTH * 8, "stack");
     task->rsp = (uint64_t)(stack + STACK_LENGTH);
     task->rip = (uint64_t)func;
-    task->flag = TASK_INITIALIZED;
+    task->flag = TASK_RUNNING;
     task->task_id = taskctl.next_task_id;
     task->priority = priority;
     taskctl.next_task_id++;
@@ -89,6 +89,7 @@ struct TASK *task_alloc(void (*func)(), int priority, int is_userland)
     sf->flags = 0x202;
     task->rsp = task->rsp - sizeof(struct stackframe64);
 
+    list_pushback(&taskctl.lists[task->priority], &task->link);
     return task;
 }
 
@@ -97,18 +98,21 @@ struct TASK *current_task()
 	return taskctl.current_task;
 }
 
-void task_run(struct TASK *new_task) {
-	// task is already running
-	if(new_task->flag == TASK_RUNNING) {
-		return;
+void task_wakeup(void * cause) {
+	int i;
+	for(i = 0; i < taskctl.next_task_id; i++) {
+		struct TASK *task = &taskctl.tasks[i];
+		if(task->waitcause == cause && task->flag != TASK_RUNNING) {
+			task->flag = TASK_RUNNING;
+			list_pushback(&taskctl.lists[task->priority], &task->link);
+		}
 	}
-	new_task->flag = TASK_RUNNING;
-	list_pushback(&taskctl.lists[new_task->priority], &new_task->link);
 }
 
-void task_sleep()
+void task_sleep(void *cause)
 {
        taskctl.current_task->flag = TASK_WAITING;
+       taskctl.current_task->waitcause = cause;
        task_switch();
 }
 

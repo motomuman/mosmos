@@ -23,7 +23,6 @@ struct udp_rx_data {
 
 struct udp_socket {
 	struct listctl rx_data_list;
-	struct TASK *receiver;
 	int wait_id;
 	uint16_t port;
 	uint8_t flag;
@@ -49,7 +48,6 @@ int udp_socket()
 	for(i = 0; i < UDP_SOCKET_COUNT; i++) {
 		if(udp_sockets[i].flag == UDP_SOCKET_FREE) {
 			udp_sockets[i].wait_id = 0;
-			udp_sockets[i].receiver = current_task();
 			udp_sockets[i].flag = UDP_SOCKET_USED;
 			udp_sockets[i].port = UDP_PORT_START + i;
 			return i;
@@ -141,9 +139,8 @@ void udp_socket_recv_timeout(void *_args)
 	int wait_id = args[1];
 	struct udp_socket *socket = &udp_sockets[socket_id];
 	if(socket->flag == UDP_SOCKET_USED
-			&& socket->wait_id == wait_id
-			&& socket->receiver != NULL){
-		task_run(socket->receiver);
+			&& socket->wait_id == wait_id) {
+		task_wakeup(socket);
 	}
 	mem_free(args);
 }
@@ -163,7 +160,7 @@ int udp_socket_recv(int socket_id, uint8_t *buf, int size)
 		args[0] = socket_id;
 		args[1] = socket->wait_id;
 		wq_push_with_delay(udp_socket_recv_timeout, args, 5000);
-		task_sleep();
+		task_sleep(socket);
 	}
 
 	//timeout
@@ -196,9 +193,7 @@ void udp_rx(struct pktbuf *pkt)
 			memcpy(data, pkt->buf, data_len);
 
 			list_pushback(&udp_sockets[i].rx_data_list, &rx_data->link);
-			if(udp_sockets[i].receiver != NULL) {
-				task_run(udp_sockets[i].receiver);
-			}
+			task_wakeup(&udp_sockets[i]);
 		}
 	}
 }

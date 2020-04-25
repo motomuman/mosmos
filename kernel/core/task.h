@@ -20,6 +20,7 @@ struct TASK {
 	int flag;
 	int task_id;
 	int priority;
+	void* waitcause;
 };
 
 struct TASKCTL {
@@ -30,9 +31,9 @@ struct TASKCTL {
 };
 
 struct TASK *task_init();
-struct TASK *task_alloc(void (*func)(), int priority, int is_userland);
-void task_run(struct TASK *new_task);
-void task_sleep();
+struct TASK *task_start(void (*func)(), int priority, int is_userland);
+void task_wakeup(void *cause);
+void task_sleep(void *cause);
 uint64_t** schedule();
 void task_show();
 struct TASK *current_task();

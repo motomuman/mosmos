@@ -29,6 +29,7 @@ uint8_t key_buf[KEY_BUF_LEN];
 int key_buf_read;
 int key_buf_write;
 int key_buf_size;
+int key_cond;
 
 struct TASK *receiver;
 
@@ -72,9 +73,7 @@ void int_keyboard() {
 		uint8_t key = keytable[ch];
 		if(key != 0) {
 			key_buf_push(key);
-			if(receiver != NULL) {
-				task_run(receiver);
-			}
+			task_wakeup(&key_cond);
 		}
 	}
 
@@ -87,7 +86,7 @@ uint8_t key_getc()
 {
 	if(key_buf_empty()) {
 		receiver = current_task();
-		task_sleep();
+		task_sleep(&key_cond);
 	}
 
 	return key_buf_pop();

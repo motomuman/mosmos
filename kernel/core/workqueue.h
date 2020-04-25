@@ -11,5 +11,6 @@ void wq_push(void (*func) (void *), void *arg);
 void wq_push_with_delay(void (*func) (void *), void *arg, uint32_t delay_msec);
 void wq_execute();
 int wq_empty();
+void *wq_cond();
 
 #endif

@@ -76,14 +76,10 @@ void kstart(void)
 	//set_timer(hello2, NULL, 3000);
 
 	struct TASK *task_kernel;
-	struct TASK *task_user;
-	struct TASK *task_idle;
 
 	task_kernel = task_init();
-	task_user = task_alloc(userland_main, TASK_PRIORITY_HIGH, 1);
-	task_run(task_user);
-	task_idle = task_alloc(task_idle_main, TASK_PRIORITY_LOW, 0);
-	task_run(task_idle);
+	task_start(userland_main, TASK_PRIORITY_HIGH, 1);
+	task_start(task_idle_main, TASK_PRIORITY_LOW, 0);
 
 	wq_set_receiver(task_kernel);
 
@@ -92,7 +88,7 @@ void kstart(void)
 	while(1){
 		io_cli();
 		if(wq_empty()) {
-			task_sleep();
+			task_sleep(wq_cond());
 			io_sti();
 		} else {
 			io_sti();
