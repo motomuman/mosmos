@@ -7,6 +7,7 @@
 #include "ip.h"
 #include "task.h"
 #include "workqueue.h"
+#include "timer.h"
 
 #define RAW_SOCKET_FREE	0
 #define RAW_SOCKET_USED	1
@@ -19,7 +20,7 @@ struct raw_rx_data {
 
 struct raw_socket {
 	struct listctl rx_data_list;
-	int wait_id;
+	uint64_t wait_id;
 	uint8_t proto;
 	uint8_t flag;
 };
@@ -107,8 +108,7 @@ void raw_socket_recv_timeout(void *_args)
 	int socket_id = args[0];
 	int wait_id = args[1];
 	struct raw_socket *socket = &raw_sockets[socket_id];
-	if(socket->flag == RAW_SOCKET_USED
-			&& socket->wait_id == wait_id) {
+	if(socket->wait_id == wait_id) {
 		task_wakeup(socket);
 	}
 	mem_free(args);
@@ -124,7 +124,7 @@ int raw_socket_recv(int socket_id, uint8_t *buf, int size)
 	struct raw_socket *socket = &raw_sockets[socket_id];
 	if(list_empty(&socket->rx_data_list)) {
 		// Set timeout and sleep this task
-		socket->wait_id++;
+		socket->wait_id = get_tick();
 		int * args = (int *) mem_alloc(2 * sizeof(int), "raw_timeout_arg");
 		args[0] = socket_id;
 		args[1] = socket->wait_id;

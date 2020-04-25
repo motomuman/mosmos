@@ -7,7 +7,6 @@
 struct workqueue {
 	struct listctl list;
 	struct TASK *receiver_task;
-	int cond;
 };
 
 struct work_task {

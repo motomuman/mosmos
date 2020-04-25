@@ -81,8 +81,6 @@ void kstart(void)
 	task_start(userland_main, TASK_PRIORITY_HIGH, 1);
 	task_start(task_idle_main, TASK_PRIORITY_LOW, 0);
 
-	wq_set_receiver(task_kernel);
-
 	io_sti();
 
 	while(1){

@@ -20,6 +20,8 @@ void asm_int_keyboard();
 void asm_int_pit();
 void asm_int_r8169();
 void asm_syscall_handler();
+uint64_t test_and_set(uint64_t *mtx, uint64_t val);
+uint64_t get_rflags();
 void task_switch();
 
 void asm_int_0();

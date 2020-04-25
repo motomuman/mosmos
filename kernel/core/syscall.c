@@ -7,6 +7,7 @@
 #include "lib.h"
 #include "udp.h"
 #include "keyboard.h"
+#include "timer.h"
 
 int syscall_print_str(uint64_t _str) {
 	char *str = (char *) _str;

@@ -90,6 +90,21 @@ _load_tr:
 	ltr	di
 	ret
 
+_test_and_set:
+	lock bts [rdi], rsi ;cf test_and_set(*rdi, rsi)
+	jnc	.success    ; if(0 == cf) -> success
+.fail
+	mov	rax, rsi
+	ret
+.success
+	mov	rax, 0
+	ret
+
+_get_rflags:
+	pushfq
+	pop	rax
+	ret
+
 _task_switch:
 	push	rbp
 	push	rbx
