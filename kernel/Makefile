@@ -30,6 +30,7 @@ OBJS_KERNEL += net/ip.o
 OBJS_KERNEL += net/icmp.o
 OBJS_KERNEL += net/raw.o
 OBJS_KERNEL += net/udp.o
+OBJS_KERNEL += net/tcp.o
 OBJS_KERNEL += lib/list.o
 OBJS_KERNEL += lib/lib.o
 OBJS_KERNEL += lib/print.o

@@ -39,7 +39,7 @@
 // |                   |                  | 29
 // +-------------------+------------------+
 
-#define APPSCREEN_WIDTH 50
+#define APPSCREEN_WIDTH 70
 
 uint64_t FONT_ADR;
 

@@ -7,6 +7,7 @@
 #include "arp.h"
 #include "raw.h"
 #include "udp.h"
+#include "tcp.h"
 
 #define NULL 0
 
@@ -65,10 +66,10 @@ void ip_rx(struct pktbuf *pkt)
 {
 	struct ip_hdr *iphdr = (struct ip_hdr *)pkt->buf;
 
-	if(iphdr->flafra != 0) {
-		printstr_log("ignore fragmented ip");
-		return;
-	}
+	//if(iphdr->flafra != 0) {
+	//	printstr_log("ignore fragmented ip");
+	//	return;
+	//}
 
 	if(get_netdev()->ip_addr != ntoh32(iphdr->dip)) {
 		printstr_log("ignore ip packt to:");
@@ -93,6 +94,7 @@ void ip_rx(struct pktbuf *pkt)
 			break;
 		case IP_HDR_PROTO_TCP:
 			printstr_log("ip_rx: TCP\n");
+			tcp_rx(pkt);
 			break;
 		case IP_HDR_PROTO_UDP:
 			printstr_log("ip_rx: UDP\n");
