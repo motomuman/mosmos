@@ -34,6 +34,9 @@ struct tcp_dummy_ip_hdr {
 
 void tcp_socket_init();
 int tcp_socket();
+int tcp_socket_bind(int socket_id, uint32_t sip, uint16_t sport);
+int tcp_socket_listen(int socket_id);
+int tcp_socket_accept(int socket_id);
 int tcp_socket_connect(int socket_id, uint32_t dip, uint16_t dport);
 int tcp_socket_send(int socket_id, uint8_t *buf, int size);
 void tcp_rx(struct pktbuf *pkt);

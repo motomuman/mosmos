@@ -23,7 +23,32 @@
 #include "user_app.h"
 #include "keyboard.h"
 
-void task_tcp() {
+void task_tcp_server() {
+	int tcp_sock = tcp_socket();
+	uint32_t my_addr = (192 << 24) | (168 << 16) | (2 << 8) | 2;
+	int ret = tcp_socket_bind(tcp_sock, my_addr, 8888);
+	int i;
+
+	tcp_socket_listen(tcp_sock);
+	ret = tcp_socket_accept(tcp_sock);
+	if(ret == -1) {
+		printstr_app("failed to accept\n");
+	}
+	tcp_socket_send(tcp_sock, "HELLO", 5);
+	char buf[12];
+	tcp_socket_recv(tcp_sock, buf, 10);
+
+	printstr_app(buf);
+
+	tcp_socket_close(tcp_sock);
+
+	while(1) {
+		for(i = 0; i < 1000000000; i++) {
+		}
+	}
+}
+
+void task_tcp_client() {
 	int tcp_sock = tcp_socket();
 	//uint32_t gw_addr = (192 << 24) | (168 << 16) | (2 << 8) | 1;
 	uint32_t ip_addr = (216 << 24) | (58 << 16) | (199 << 8) | 238;
@@ -194,7 +219,7 @@ void kstart(void)
 
 	task_init();
 	//task_start(userland_main, TASK_PRIORITY_HIGH, 1);
-	task_start(task_tcp, TASK_PRIORITY_HIGH, 0);
+	task_start(task_tcp_server, TASK_PRIORITY_HIGH, 0);
 	task_start(task_idle_main, TASK_PRIORITY_LOW, 0);
 
 	io_sti();

@@ -19,12 +19,13 @@
 
 typedef enum TCP_STATE {
 	CLOSED,
+	LISTEN,
+	SYN_RCVD,
 	SYN_SENT,
 	ESTABLISHED,
 	FIN_WAIT_1,
 	CLOSING,
 	CLOSE_WAIT,
-	LAST_ACK
 } TCP_STATE;
 
 typedef enum TCP_EVENT {
@@ -44,6 +45,7 @@ struct tcp_socket {
 	struct listctl rx_data_list;
 	uint64_t wait_id;
 	uint16_t sport;
+	uint32_t sip;
 	uint16_t dport;
 	uint32_t dip;
 	uint8_t flag;
@@ -62,6 +64,10 @@ char *get_tcp_state_str(TCP_STATE state) {
 	switch(state) {
 		case CLOSED:
 			return "CLOSED";
+		case LISTEN:
+			return "LISTEN";
+		case SYN_RCVD:
+			return "SYN_RCVD";
 		case SYN_SENT:
 			return "SYN_SENT";
 		case ESTABLISHED:
@@ -72,8 +78,6 @@ char *get_tcp_state_str(TCP_STATE state) {
 			return "CLOSING";
 		case CLOSE_WAIT:
 			return "CLOSE_WAIT";
-		case LAST_ACK:
-			return "LAST_ACK";
 	}
 	return "UNKNOWN_STATE";
 }
@@ -184,6 +188,86 @@ int tcp_socket_connect(int socket_id, uint32_t dip, uint16_t dport)
 			return -1;
 		default:
 			printstr_app("unhandled state in tcp socket connect \n");
+			panic();
+			return -1;
+	}
+}
+
+int tcp_socket_bind(int socket_id, uint32_t sip, uint16_t sport)
+{
+	struct tcp_socket *socket = &tcp_sockets[socket_id];
+
+
+	switch(socket->state) {
+		case CLOSED:
+			socket->sport = sport;
+			socket->sip = sip;
+			return 0;
+		case SYN_SENT:
+		case ESTABLISHED:
+		case FIN_WAIT_1:
+		case CLOSING:
+			printstr_app("tried to bing with ");
+			printstr_app(get_tcp_state_str(socket->state));
+			printstr_app("\n");
+			return -1;
+		default:
+			printstr_app("unhandled state in tcp socket bind \n");
+			panic();
+			return -1;
+	}
+}
+
+int tcp_socket_listen(int socket_id)
+{
+	struct tcp_socket *socket = &tcp_sockets[socket_id];
+
+	switch(socket->state) {
+		case CLOSED:
+			socket->state = LISTEN;
+			printstr_app("tcp_state: CLOSED -> LISTEN\n");
+			return 0;
+		case SYN_SENT:
+		case ESTABLISHED:
+		case FIN_WAIT_1:
+		case CLOSING:
+			printstr_app("tried to listen with ");
+			printstr_app(get_tcp_state_str(socket->state));
+			printstr_app("\n");
+			return -1;
+		default:
+			printstr_app("unhandled state in tcp socket listen \n");
+			panic();
+			return -1;
+	}
+}
+
+int tcp_socket_accept(int socket_id)
+{
+	struct tcp_socket *socket = &tcp_sockets[socket_id];
+
+	switch(socket->state) {
+		case LISTEN:
+			task_sleep(socket);
+			printstr_app("wakeup socekt accept: ");
+			printstr_app(get_tcp_state_str(socket->state));
+			printstr_app("\n");
+			if(socket->state == LISTEN) {
+				return -1;
+			} else {
+				return 1;
+			}
+		case CLOSED:
+		case SYN_SENT:
+		case ESTABLISHED:
+		case FIN_WAIT_1:
+		case CLOSING:
+			printstr_app("tried to accept with ");
+			printstr_app(get_tcp_state_str(socket->state));
+			printstr_app("\n");
+			return -1;
+		default:
+			printstr_app("unhandled state in tcp socket accept \n");
 			panic();
 			return -1;
 	}
@@ -362,6 +446,24 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 
 	switch(socket->state) {
 		case CLOSED:
+			break;
+		case LISTEN:
+			if((ntoh16(tcphdr->flags) & TCP_FLAGS_SYN)) {
+				socket->ack_num = ntoh32(tcphdr->seq_num) + 1;
+				socket->dip = ntoh32(iphdr->sip);
+				socket->dport = ntoh16(tcphdr->sport);
+				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_SYN | TCP_FLAGS_ACK);
+				socket->seq_num++;
+				socket->state = SYN_RCVD;
+				printstr_app("tcp_state: LISTEN -> SYN_RCVD\n");
+			}
+			break;
+		case SYN_RCVD:
+			if((ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
+				socket->state = ESTABLISHED;
+				printstr_app("tcp_state: SYN_RCVD -> ESTABLISHED\n");
+				task_wakeup(socket);
+			}
 			break;
 		case SYN_SENT:
 			if((ntoh16(tcphdr->flags) & TCP_FLAGS_SYN) && (ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
