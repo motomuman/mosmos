@@ -53,3 +53,43 @@ uint64_t sys_get_tick()
 {
 	return sys_call(10, 0, 0, 0, 0, 0);
 }
+
+int sys_tcp_socket()
+{
+	return sys_call(11, 0, 0, 0, 0, 0);
+}
+
+int sys_tcp_socket_connect(int sock, uint32_t dip, uint16_t dport)
+{
+	return sys_call(12, (uint64_t) sock, (uint64_t) dip, (uint64_t) dport, 0, 0);
+}
+
+int sys_tcp_socket_send(int sock, uint8_t *buf, int size)
+{
+	return sys_call(13, (uint64_t) sock, (uint64_t) buf, (uint64_t) size, 0, 0);
+}
+
+int sys_tcp_socket_recv(int sock, uint8_t *buf, int size)
+{
+	return sys_call(14, (uint64_t) sock, (uint64_t) buf, (uint64_t) size, 0, 0);
+}
+
+int sys_tcp_socket_close(int sock)
+{
+	return sys_call(15, (uint64_t) sock, 0, 0, 0, 0);
+}
+
+int sys_tcp_socket_bind(int sock, uint32_t sip, uint16_t sport)
+{
+	return sys_call(16, (uint64_t) sock, (uint64_t) sip, (uint64_t) sport, 0, 0);
+}
+
+int sys_tcp_socket_listen(int sock)
+{
+	return sys_call(17, (uint64_t) sock, 0, 0, 0, 0);
+}
+
+int sys_tcp_socket_accept(int sock)
+{
+	return sys_call(18, (uint64_t) sock, 0, 0, 0, 0);
+}

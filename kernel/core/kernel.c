@@ -220,8 +220,8 @@ void kstart(void)
 	netdev_set_netmask(24);
 
 	task_init();
-	//task_start(userland_main, TASK_PRIORITY_HIGH, 1);
-	task_start(task_tcp_server, TASK_PRIORITY_HIGH, 0);
+	task_start(userland_main, TASK_PRIORITY_HIGH, 1);
+	//task_start(task_tcp_server, TASK_PRIORITY_HIGH, 0);
 	task_start(task_idle_main, TASK_PRIORITY_LOW, 0);
 
 	io_sti();

@@ -8,6 +8,7 @@
 #include "udp.h"
 #include "keyboard.h"
 #include "timer.h"
+#include "tcp.h"
 
 int syscall_print_str(uint64_t _str) {
 	char *str = (char *) _str;
@@ -58,6 +59,41 @@ int syscall_get_tick() {
 	return get_tick();
 }
 
+int syscall_tcp_socket() {
+	return tcp_socket();
+}
+
+int syscall_tcp_socket_connect(uint64_t sock, uint64_t dip, uint64_t dport) {
+	return tcp_socket_connect(sock, dip, dport);
+}
+
+int syscall_tcp_socket_send(uint64_t sock, uint64_t _buf, uint64_t size) {
+	uint8_t *buf = (uint8_t *)_buf;
+	tcp_socket_send(sock, buf, size);
+	return 0;
+}
+
+int syscall_tcp_socket_recv(uint64_t sock, uint64_t _buf, uint64_t size) {
+	uint8_t *buf = (uint8_t *)_buf;
+	return tcp_socket_recv(sock, buf, size);
+}
+
+int syscall_tcp_socket_close(uint64_t sock) {
+	return tcp_socket_close(sock);
+}
+
+int syscall_tcp_socket_bind(uint64_t sock, uint64_t sip, uint64_t sport) {
+	return tcp_socket_bind(sock, sip, sport);
+}
+
+int syscall_tcp_socket_listen(uint64_t sock) {
+	return tcp_socket_listen(sock);
+}
+
+int syscall_tcp_socket_accept(uint64_t sock) {
+	return tcp_socket_accept(sock);
+}
+
 int syscall_handler(uint64_t rdi, uint64_t rsi,
 		uint64_t rdx, uint64_t rcx, uint64_t r8, uint64_t r9)
 {
@@ -83,6 +119,22 @@ int syscall_handler(uint64_t rdi, uint64_t rsi,
 			return syscall_key_getc();
 		case SYSCALL_GET_TICK:
 			return syscall_get_tick();
+		case SYSCALL_TCP_SOCKET:
+			return syscall_tcp_socket();
+		case SYSCALL_TCP_CONNECT:
+			return syscall_tcp_socket_connect(rsi, rdx, rcx);
+		case SYSCALL_TCP_SEND:
+			return syscall_tcp_socket_send(rsi, rdx, rcx);
+		case SYSCALL_TCP_RECV:
+			return syscall_tcp_socket_recv(rsi, rdx, rcx);
+		case SYSCALL_TCP_CLOSE:
+			return syscall_tcp_socket_close(rsi);
+		case SYSCALL_TCP_BIND:
+			return syscall_tcp_socket_bind(rsi, rdx, rcx);
+		case SYSCALL_TCP_LISTEN:
+			return syscall_tcp_socket_listen(rsi);
+		case SYSCALL_TCP_ACCEPT:
+			return syscall_tcp_socket_accept(rsi);
 		default:
 			printstr_log("unknown syscall rdi:");
 			printnum_log(rdi);

@@ -12,6 +12,15 @@
 #define SYSCALL_KEY_GETC 9
 #define SYSCALL_GET_TICK 10
 
+#define SYSCALL_TCP_SOCKET 11
+#define SYSCALL_TCP_CONNECT 12
+#define SYSCALL_TCP_SEND 13
+#define SYSCALL_TCP_RECV 14
+#define SYSCALL_TCP_CLOSE 15
+#define SYSCALL_TCP_BIND 16
+#define SYSCALL_TCP_LISTEN 17
+#define SYSCALL_TCP_ACCEPT 18
+
 void init_syscall();
 
 #endif

@@ -107,7 +107,9 @@ uint32_t resolve_addr(int sock, char *name)
 
 	int ret = sys_udp_socket_recv(sock, rxbuf, 500);
 	if(ret == -1) {
-		sys_print_str("Failed to resolve dns\n");
+		sys_print_str("Failed to resolve dns: ");
+		sys_print_str(name);
+		sys_print_str("\n");
 		return 0;
 	}
 	struct dns_hdr *ansdns_hdr = (struct dns_hdr *)rxbuf;

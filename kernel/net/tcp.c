@@ -272,12 +272,15 @@ int tcp_socket_close(int socket_id)
 			socket->seq_num++;
 			socket->state = FIN_WAIT_1;
 			printstr_app("tcp_state: ESTABLISHED -> FIN_WAIT_1\n");
-			return 0;
+			task_sleep(socket);
+			return socket->state == CLOSED ? -1 : 0;
 		case CLOSED:
 			return 0;
+		case CLOSING:
+			task_sleep(socket);
+			return socket->state == CLOSED ? -1 : 0;
 		case SYN_SENT:
 		case FIN_WAIT_1:
-		case CLOSING:
 		case LISTEN:
 		case SYN_RCVD:
 		case CLOSE_WAIT:
@@ -503,12 +506,14 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK);
 				socket->state = CLOSED;
 				printstr_app("tcp_state: FIN_WAIT_1 -> CLOSED\n");
+				task_wakeup(socket);
 			}
 			break;
 		case CLOSING:
 			if((ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
 				socket->state = CLOSED;
 				printstr_app("tcp_state: CLOSING -> CLOSED\n");
+				task_wakeup(socket);
 			}
 			break;
 		default:
