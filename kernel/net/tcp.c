@@ -123,8 +123,6 @@ int tcp_socket()
 	printstr_log("ERROR: exceed max tcp socket count\n");
 	panic();
 	return -1;
-
-
 }
 
 void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_t size, uint8_t flags);
@@ -141,13 +139,12 @@ void tcp_connect_timeout(void *_args)
 			task_wakeup(socket);
 			break;
 		case CLOSED:
+		case LISTEN:
+		case SYN_RCVD:
+		case CLOSE_WAIT:
 		case ESTABLISHED:
 		case FIN_WAIT_1:
 		case CLOSING:
-			break;
-		default:
-			printstr_app("unhandled state in tcp connect timeout\n");
-			panic();
 			break;
 	}
 	mem_free(_args);
@@ -156,7 +153,6 @@ void tcp_connect_timeout(void *_args)
 int tcp_socket_connect(int socket_id, uint32_t dip, uint16_t dport)
 {
 	struct tcp_socket *socket = &tcp_sockets[socket_id];
-
 	socket->sport = TCP_PORT_START + (get_tick() * get_tick() + get_tick()) % 10000;
 	socket->dip = dip;
 	socket->dport = dport;
@@ -179,25 +175,24 @@ int tcp_socket_connect(int socket_id, uint32_t dip, uint16_t dport)
 			task_sleep(socket);
 			return socket->state == ESTABLISHED;
 		case SYN_SENT:
+		case LISTEN:
+		case SYN_RCVD:
+		case CLOSE_WAIT:
 		case ESTABLISHED:
 		case FIN_WAIT_1:
 		case CLOSING:
-			printstr_app("tried to connect with ");
+			printstr_app("tcp_socket_connect, invalid state: ");
 			printstr_app(get_tcp_state_str(socket->state));
 			printstr_app("\n");
-			return -1;
-		default:
-			printstr_app("unhandled state in tcp socket connect \n");
 			panic();
 			return -1;
 	}
+	return -1;
 }
 
 int tcp_socket_bind(int socket_id, uint32_t sip, uint16_t sport)
 {
 	struct tcp_socket *socket = &tcp_sockets[socket_id];
-
-
 	switch(socket->state) {
 		case CLOSED:
 			socket->sport = sport;
@@ -207,15 +202,16 @@ int tcp_socket_bind(int socket_id, uint32_t sip, uint16_t sport)
 		case ESTABLISHED:
 		case FIN_WAIT_1:
 		case CLOSING:
-			printstr_app("tried to bing with ");
+		case LISTEN:
+		case SYN_RCVD:
+		case CLOSE_WAIT:
+			printstr_app("tcp_socket_bind, invalid state: ");
 			printstr_app(get_tcp_state_str(socket->state));
 			printstr_app("\n");
-			return -1;
-		default:
-			printstr_app("unhandled state in tcp socket bind \n");
 			panic();
 			return -1;
 	}
+	return -1;
 }
 
 int tcp_socket_listen(int socket_id)
@@ -228,18 +224,19 @@ int tcp_socket_listen(int socket_id)
 			printstr_app("tcp_state: CLOSED -> LISTEN\n");
 			return 0;
 		case SYN_SENT:
+		case CLOSE_WAIT:
+		case LISTEN:
+		case SYN_RCVD:
 		case ESTABLISHED:
 		case FIN_WAIT_1:
 		case CLOSING:
-			printstr_app("tried to listen with ");
+			printstr_app("tcp_socket_listen, invalid state: ");
 			printstr_app(get_tcp_state_str(socket->state));
 			printstr_app("\n");
-			return -1;
-		default:
-			printstr_app("unhandled state in tcp socket listen \n");
 			panic();
 			return -1;
 	}
+	return -1;
 }
 
 int tcp_socket_accept(int socket_id)
@@ -249,28 +246,21 @@ int tcp_socket_accept(int socket_id)
 	switch(socket->state) {
 		case LISTEN:
 			task_sleep(socket);
-			printstr_app("wakeup socekt accept: ");
-			printstr_app(get_tcp_state_str(socket->state));
-			printstr_app("\n");
-			if(socket->state == LISTEN) {
-				return -1;
-			} else {
-				return 1;
-			}
+			return socket->state == LISTEN ? -1 : 0;
 		case CLOSED:
 		case SYN_SENT:
+		case SYN_RCVD:
+		case CLOSE_WAIT:
 		case ESTABLISHED:
 		case FIN_WAIT_1:
 		case CLOSING:
-			printstr_app("tried to accept with ");
+			printstr_app("tcp_socket_accept, invalid state: ");
 			printstr_app(get_tcp_state_str(socket->state));
 			printstr_app("\n");
-			return -1;
-		default:
-			printstr_app("unhandled state in tcp socket accept \n");
 			panic();
 			return -1;
 	}
+	return -1;
 }
 
 int tcp_socket_close(int socket_id)
@@ -288,12 +278,16 @@ int tcp_socket_close(int socket_id)
 		case SYN_SENT:
 		case FIN_WAIT_1:
 		case CLOSING:
-			return -1;
-		default:
-			printstr_app("unhandled state in tcp socket connect \n");
+		case LISTEN:
+		case SYN_RCVD:
+		case CLOSE_WAIT:
+			printstr_app("tcp_socket_close, invalid state: ");
+			printstr_app(get_tcp_state_str(socket->state));
+			printstr_app("\n");
 			panic();
 			return -1;
 	}
+	return -1;
 }
 
 void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_t size, uint8_t flags)
@@ -342,6 +336,8 @@ void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_
 
 	socket->seq_num += size;
 
+	// MSS opt, need to support opt
+	// in more flexible way
 	if(socket->state == CLOSED) {
 		txpkt->buf[0] = 0x02;
 		txpkt->buf[1] = 0x04;
@@ -378,13 +374,17 @@ int tcp_socket_send(int socket_id, uint8_t *buf, int size)
 		case CLOSED:
 		case SYN_SENT:
 		case FIN_WAIT_1:
+		case LISTEN:
+		case SYN_RCVD:
+		case CLOSE_WAIT:
 		case CLOSING:
-			return -1;
-		default:
-			printstr_app("unhandled state in tcp socket connect \n");
+			printstr_app("tcp_socket_send, invalid state: ");
+			printstr_app(get_tcp_state_str(socket->state));
+			printstr_app("\n");
 			panic();
 			return -1;
 	}
+	return -1;
 }
 
 void tcp_socket_recv_timeout(void *_args)
@@ -484,7 +484,7 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 				rx_data->data = data;
 				memcpy(data, pkt->buf, data_len);
 				list_pushback(&socket->rx_data_list, &rx_data->link);
-				//task_wakeup(socket);
+				task_wakeup(socket);
 			}
 
 			socket->ack_num = ntoh32(tcphdr->seq_num) + data_len;

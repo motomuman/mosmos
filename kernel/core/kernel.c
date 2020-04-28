@@ -34,9 +34,13 @@ void task_tcp_server() {
 	if(ret == -1) {
 		printstr_app("failed to accept\n");
 	}
-	tcp_socket_send(tcp_sock, "HELLO", 5);
+	tcp_socket_send(tcp_sock, (uint8_t *)"HELLO", 5);
 	char buf[12];
-	tcp_socket_recv(tcp_sock, buf, 10);
+	memset(buf, 0, 12);
+	ret = tcp_socket_recv(tcp_sock, (uint8_t *)buf, 10);
+	if(ret == -1) {
+		printstr_app("tcp_socket_recv timeout\n");
+	}
 
 	printstr_app(buf);
 
@@ -100,8 +104,6 @@ void task_tcp_client() {
 	buf[35] = 0x0a;
 
 	tcp_socket_send(tcp_sock, buf, 36);
-	for(i = 0; i < 1000000000; i++) {
-	}
 
 	memset(buf, 0, 1500);
 	ret = tcp_socket_recv(tcp_sock, buf, 1500);
