@@ -135,7 +135,7 @@ void tcp_connect_timeout(void *_args)
 	switch(socket->state) {
 		case SYN_SENT:
 			socket->state = CLOSED;
-			printstr_app("tcp_state: SYN_SENT -> CLOSED\n");
+			printstr_log("tcp_state: SYN_SENT -> CLOSED\n");
 			task_wakeup(socket);
 			break;
 		case CLOSED:
@@ -169,7 +169,7 @@ int tcp_socket_connect(int socket_id, uint32_t dip, uint16_t dport)
 			*args = socket_id;
 			wq_push_with_delay(tcp_connect_timeout, args, 5000);
 
-			printstr_app("tcp_state: CLOSED -> SYN_SENT\n");
+			printstr_log("tcp_state: CLOSED -> SYN_SENT\n");
 
 			// wait syn ack
 			task_sleep(socket);
@@ -181,9 +181,9 @@ int tcp_socket_connect(int socket_id, uint32_t dip, uint16_t dport)
 		case ESTABLISHED:
 		case FIN_WAIT_1:
 		case CLOSING:
-			printstr_app("tcp_socket_connect, invalid state: ");
-			printstr_app(get_tcp_state_str(socket->state));
-			printstr_app("\n");
+			printstr_log("tcp_socket_connect, invalid state: ");
+			printstr_log(get_tcp_state_str(socket->state));
+			printstr_log("\n");
 			panic();
 			return -1;
 	}
@@ -205,9 +205,9 @@ int tcp_socket_bind(int socket_id, uint32_t sip, uint16_t sport)
 		case LISTEN:
 		case SYN_RCVD:
 		case CLOSE_WAIT:
-			printstr_app("tcp_socket_bind, invalid state: ");
-			printstr_app(get_tcp_state_str(socket->state));
-			printstr_app("\n");
+			printstr_log("tcp_socket_bind, invalid state: ");
+			printstr_log(get_tcp_state_str(socket->state));
+			printstr_log("\n");
 			panic();
 			return -1;
 	}
@@ -221,7 +221,7 @@ int tcp_socket_listen(int socket_id)
 	switch(socket->state) {
 		case CLOSED:
 			socket->state = LISTEN;
-			printstr_app("tcp_state: CLOSED -> LISTEN\n");
+			printstr_log("tcp_state: CLOSED -> LISTEN\n");
 			return 0;
 		case SYN_SENT:
 		case CLOSE_WAIT:
@@ -230,9 +230,9 @@ int tcp_socket_listen(int socket_id)
 		case ESTABLISHED:
 		case FIN_WAIT_1:
 		case CLOSING:
-			printstr_app("tcp_socket_listen, invalid state: ");
-			printstr_app(get_tcp_state_str(socket->state));
-			printstr_app("\n");
+			printstr_log("tcp_socket_listen, invalid state: ");
+			printstr_log(get_tcp_state_str(socket->state));
+			printstr_log("\n");
 			panic();
 			return -1;
 	}
@@ -254,9 +254,9 @@ int tcp_socket_accept(int socket_id)
 		case ESTABLISHED:
 		case FIN_WAIT_1:
 		case CLOSING:
-			printstr_app("tcp_socket_accept, invalid state: ");
-			printstr_app(get_tcp_state_str(socket->state));
-			printstr_app("\n");
+			printstr_log("tcp_socket_accept, invalid state: ");
+			printstr_log(get_tcp_state_str(socket->state));
+			printstr_log("\n");
 			panic();
 			return -1;
 	}
@@ -271,7 +271,7 @@ int tcp_socket_close(int socket_id)
 			tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK | TCP_FLAGS_FIN);
 			socket->seq_num++;
 			socket->state = FIN_WAIT_1;
-			printstr_app("tcp_state: ESTABLISHED -> FIN_WAIT_1\n");
+			printstr_log("tcp_state: ESTABLISHED -> FIN_WAIT_1\n");
 			task_sleep(socket);
 			return socket->state == CLOSED ? -1 : 0;
 		case CLOSED:
@@ -284,9 +284,9 @@ int tcp_socket_close(int socket_id)
 		case LISTEN:
 		case SYN_RCVD:
 		case CLOSE_WAIT:
-			printstr_app("tcp_socket_close, invalid state: ");
-			printstr_app(get_tcp_state_str(socket->state));
-			printstr_app("\n");
+			printstr_log("tcp_socket_close, invalid state: ");
+			printstr_log(get_tcp_state_str(socket->state));
+			printstr_log("\n");
 			panic();
 			return -1;
 	}
@@ -381,9 +381,9 @@ int tcp_socket_send(int socket_id, uint8_t *buf, int size)
 		case SYN_RCVD:
 		case CLOSE_WAIT:
 		case CLOSING:
-			printstr_app("tcp_socket_send, invalid state: ");
-			printstr_app(get_tcp_state_str(socket->state));
-			printstr_app("\n");
+			printstr_log("tcp_socket_send, invalid state: ");
+			printstr_log(get_tcp_state_str(socket->state));
+			printstr_log("\n");
 			panic();
 			return -1;
 	}
@@ -461,13 +461,13 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_SYN | TCP_FLAGS_ACK);
 				socket->seq_num++;
 				socket->state = SYN_RCVD;
-				printstr_app("tcp_state: LISTEN -> SYN_RCVD\n");
+				printstr_log("tcp_state: LISTEN -> SYN_RCVD\n");
 			}
 			break;
 		case SYN_RCVD:
 			if((ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
 				socket->state = ESTABLISHED;
-				printstr_app("tcp_state: SYN_RCVD -> ESTABLISHED\n");
+				printstr_log("tcp_state: SYN_RCVD -> ESTABLISHED\n");
 				task_wakeup(socket);
 			}
 			break;
@@ -476,7 +476,7 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 				socket->ack_num = ntoh32(tcphdr->seq_num) + 1;
 				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK);
 				socket->state = ESTABLISHED;
-				printstr_app("tcp_state: SYN_SENT -> ESTABLISHED\n");
+				printstr_log("tcp_state: SYN_SENT -> ESTABLISHED\n");
 				task_wakeup(socket);
 			}
 			break;
@@ -498,7 +498,7 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 				socket->ack_num++;
 				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK | TCP_FLAGS_FIN);
 				socket->state = CLOSING;
-				printstr_app("tcp_state: ESTABLISHED -> CLOSING\n");
+				printstr_log("tcp_state: ESTABLISHED -> CLOSING\n");
 			} else if (data_len > 0) {
 				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK);
 			}
@@ -508,14 +508,14 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 				socket->ack_num++;
 				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK);
 				socket->state = CLOSED;
-				printstr_app("tcp_state: FIN_WAIT_1 -> CLOSED\n");
+				printstr_log("tcp_state: FIN_WAIT_1 -> CLOSED\n");
 				task_wakeup(socket);
 			}
 			break;
 		case CLOSING:
 			if((ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
 				socket->state = CLOSED;
-				printstr_app("tcp_state: CLOSING -> CLOSED\n");
+				printstr_log("tcp_state: CLOSING -> CLOSED\n");
 				task_wakeup(socket);
 			}
 			break;
@@ -534,12 +534,12 @@ void tcp_rx(struct pktbuf *pkt)
 
 	for(i = 0; i < TCP_SOCKET_COUNT; i++){
 		if(tcp_sockets[i].flag == TCP_SOCKET_USED && tcp_sockets[i].sport == ntoh16(tcphdr->dport)) {
-			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_FIN) printstr_app("TCP_FLAGS_FIN\n");
-			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_SYN) printstr_app("TCP_FLAGS_SYN\n");
-			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_RST) printstr_app("TCP_FLAGS_RST\n");
-			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_PSH) printstr_app("TCP_FLAGS_PSH\n");
-			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_ACK) printstr_app("TCP_FLAGS_ACK\n");
-			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_URG) printstr_app("TCP_FLAGS_URG\n");
+			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_FIN) printstr_log("TCP_FLAGS_FIN\n");
+			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_SYN) printstr_log("TCP_FLAGS_SYN\n");
+			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_RST) printstr_log("TCP_FLAGS_RST\n");
+			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_PSH) printstr_log("TCP_FLAGS_PSH\n");
+			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_ACK) printstr_log("TCP_FLAGS_ACK\n");
+			//if(ntoh16(tcphdr->flags) & TCP_FLAGS_URG) printstr_log("TCP_FLAGS_URG\n");
 			tcp_recv_pkt(i, pkt);
 		}
 	}
