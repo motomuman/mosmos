@@ -37,8 +37,8 @@ void task_tcp_server() {
 	tcp_socket_send(tcp_sock, (uint8_t *)"HELLO", 5);
 	char buf[12];
 	memset(buf, 0, 12);
-	ret = tcp_socket_recv(tcp_sock, (uint8_t *)buf, 10);
-	if(ret == -1) {
+	ret = tcp_socket_recv(tcp_sock, (uint8_t *)buf, 10, 1000);
+	if(ret == 0) {
 		printstr_app("tcp_socket_recv timeout\n");
 	}
 
@@ -46,136 +46,6 @@ void task_tcp_server() {
 
 	tcp_socket_close(tcp_sock);
 
-	while(1) {
-		for(i = 0; i < 1000000000; i++) {
-		}
-	}
-}
-
-void task_tcp_client() {
-	int tcp_sock = tcp_socket();
-	//uint32_t gw_addr = (192 << 24) | (168 << 16) | (2 << 8) | 1;
-	uint32_t ip_addr = (216 << 24) | (58 << 16) | (199 << 8) | 238;
-	int i;
-	for(i = 0; i < 500000000; i++) {
-	}
-	int ret = tcp_socket_connect(tcp_sock, ip_addr, 80);
-	if(ret != 1) {
-		ret = tcp_socket_connect(tcp_sock, ip_addr, 80);
-	}
-
-	uint8_t buf[1500];
-	memset(buf, 0, 1500);
-	buf[0] = 'G';
-	buf[1] = 'E';
-	buf[2] = 'T';
-	buf[3] = 0x20;
-	buf[4] = '/';
-	buf[5] = 0x20;
-	buf[6] = 'H';
-	buf[7] = 'T';
-	buf[8] = 'T';
-	buf[9] = 'P';
-	buf[10] = '/';
-	buf[11] = '1';
-	buf[12] = '.';
-	buf[13] = '1';
-	buf[14] = 0x0d;
-	buf[15] = 0x0a;
-	buf[16] = 'H';
-	buf[17] = 'o';
-	buf[18] = 's';
-	buf[19] = 't';
-	buf[20] = ':';
-	buf[21] = ' ';
-	buf[22] = 'g';
-	buf[23] = 'o';
-	buf[24] = 'o';
-	buf[25] = 'g';
-	buf[26] = 'l';
-	buf[27] = 'e';
-	buf[28] = '.';
-	buf[29] = 'c';
-	buf[30] = 'o';
-	buf[31] = 'm';
-	buf[32] = 0x0d;
-	buf[33] = 0x0a;
-	buf[34] = 0x0d;
-	buf[35] = 0x0a;
-
-	tcp_socket_send(tcp_sock, buf, 36);
-
-	memset(buf, 0, 1500);
-	ret = tcp_socket_recv(tcp_sock, buf, 1500);
-	if(ret == 0) {
-		printstr_app("end read\n");
-		tcp_socket_close(tcp_sock);
-		goto end;
-	} else if(ret == -1) {
-		printstr_app("timeout\n");
-		tcp_socket_close(tcp_sock);
-		goto end;
-	} else {
-		printstr_app("has content\n");
-	}
-	printstr_app((char *)buf);
-	printstr_app("\n");
-
-	for(i = 0; i < 1000000000; i++) {
-	}
-	memset(buf, 0, 1500);
-	ret = tcp_socket_recv(tcp_sock, buf, 1500);
-	if(ret == 0) {
-		printstr_app("end read\n");
-		tcp_socket_close(tcp_sock);
-		goto end;
-	} else if(ret == -1) {
-		printstr_app("timeout\n");
-		tcp_socket_close(tcp_sock);
-		goto end;
-	} else {
-		printstr_app("has content\n");
-	}
-	printstr_app((char *)buf);
-	printstr_app("\n");
-
-	for(i = 0; i < 1000000000; i++) {
-	}
-	memset(buf, 0, 1500);
-	ret = tcp_socket_recv(tcp_sock, buf, 1500);
-	if(ret == 0) {
-		printstr_app("end read\n");
-		tcp_socket_close(tcp_sock);
-		goto end;
-	} else if(ret == -1) {
-		printstr_app("timeout\n");
-		tcp_socket_close(tcp_sock);
-		goto end;
-	} else {
-		printstr_app("has content\n");
-	}
-	printstr_app((char *)buf);
-	printstr_app("\n");
-
-	for(i = 0; i < 1000000000; i++) {
-	}
-	memset(buf, 0, 1500);
-	ret = tcp_socket_recv(tcp_sock, buf, 1500);
-	if(ret == 0) {
-		printstr_app("end read\n");
-		tcp_socket_close(tcp_sock);
-		goto end;
-	} else if(ret == -1) {
-		printstr_app("timeout\n");
-		tcp_socket_close(tcp_sock);
-		goto end;
-	} else {
-		printstr_app("has content\n");
-	}
-	printstr_app((char *)buf);
-	printstr_app("\n");
-
-end:
 	while(1) {
 		for(i = 0; i < 1000000000; i++) {
 		}

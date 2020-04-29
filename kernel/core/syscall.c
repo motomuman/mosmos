@@ -51,8 +51,8 @@ int syscall_udp_socket_recv(uint64_t sock, uint64_t _buf, uint64_t size) {
 	return udp_socket_recv(sock, buf, size);
 }
 
-int syscall_key_getc() {
-	return key_getc();
+int syscall_key_getc(uint64_t is_blocking) {
+	return key_getc((int)is_blocking);
 }
 
 int syscall_get_tick() {
@@ -73,9 +73,9 @@ int syscall_tcp_socket_send(uint64_t sock, uint64_t _buf, uint64_t size) {
 	return 0;
 }
 
-int syscall_tcp_socket_recv(uint64_t sock, uint64_t _buf, uint64_t size) {
+int syscall_tcp_socket_recv(uint64_t sock, uint64_t _buf, uint64_t size, uint64_t timeout_msec) {
 	uint8_t *buf = (uint8_t *)_buf;
-	return tcp_socket_recv(sock, buf, size);
+	return tcp_socket_recv(sock, buf, size, timeout_msec);
 }
 
 int syscall_tcp_socket_close(uint64_t sock) {
@@ -116,7 +116,7 @@ int syscall_handler(uint64_t rdi, uint64_t rsi,
 		case SYSCALL_UDP_SOCK_RECV:
 			return syscall_udp_socket_recv(rsi, rdx, rcx);
 		case SYSCALL_KEY_GETC:
-			return syscall_key_getc();
+			return syscall_key_getc(rsi);
 		case SYSCALL_GET_TICK:
 			return syscall_get_tick();
 		case SYSCALL_TCP_SOCKET:
@@ -126,7 +126,7 @@ int syscall_handler(uint64_t rdi, uint64_t rsi,
 		case SYSCALL_TCP_SEND:
 			return syscall_tcp_socket_send(rsi, rdx, rcx);
 		case SYSCALL_TCP_RECV:
-			return syscall_tcp_socket_recv(rsi, rdx, rcx);
+			return syscall_tcp_socket_recv(rsi, rdx, rcx, r8);
 		case SYSCALL_TCP_CLOSE:
 			return syscall_tcp_socket_close(rsi);
 		case SYSCALL_TCP_BIND:

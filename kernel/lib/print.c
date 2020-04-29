@@ -39,7 +39,7 @@
 // |                   |                  | 29
 // +-------------------+------------------+
 
-#define APPSCREEN_WIDTH 70
+#define APPSCREEN_WIDTH 50
 
 uint64_t FONT_ADR;
 
@@ -102,6 +102,11 @@ void fixpos(struct SCREEN *screen) {
 }
 
 void putchar(struct SCREEN *screen, char ch) {
+	// ignore \r
+	if (ch == 0x0d) {
+		return;
+	}
+
 	uint64_t rflags = get_rflags();
 	io_cli();
 

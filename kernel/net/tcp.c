@@ -402,7 +402,7 @@ void tcp_socket_recv_timeout(void *_args)
 	mem_free(args);
 }
 
-int tcp_socket_recv(int socket_id, uint8_t *buf, int size)
+int tcp_socket_recv(int socket_id, uint8_t *buf, int size, int timeout_msec)
 {
 	if(socket_id < 0 || socket_id >= TCP_SOCKET_COUNT) {
 		printstr_log("ERROR: invalid tcp socket_id\n");
@@ -412,21 +412,24 @@ int tcp_socket_recv(int socket_id, uint8_t *buf, int size)
 	struct tcp_socket *socket = &tcp_sockets[socket_id];
 	if(list_empty(&socket->rx_data_list)) {
 		if(socket->state == ESTABLISHED) {
+			if(timeout_msec <= 0) {
+				return 0;
+			}
 			// set timeout and sleep this task
 			socket->wait_id = get_tick();
 			int * args = (int *) mem_alloc(2 * sizeof(int), "tcp_timeout_arg");
 			args[0] = socket_id;
 			args[1] = socket->wait_id;
-			wq_push_with_delay(tcp_socket_recv_timeout, args, 5000);
+			wq_push_with_delay(tcp_socket_recv_timeout, args, timeout_msec);
 			task_sleep(socket);
 		} else {
-			return 0;
+			return -1;
 		}
 	}
 
 	//timeout
 	if(list_empty(&socket->rx_data_list)) {
-		return -1;
+		return 0;
 	}
 
 	struct tcp_rx_data *rx_data = (struct tcp_rx_data *)list_popfront(&socket->rx_data_list);

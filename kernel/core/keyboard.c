@@ -15,7 +15,7 @@
 
 static char keytable[KEY_TABLE_SIZE] = {
 	//00
-	0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 0, 0, 0, 0,
+	0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', 0, 0, 0,
 	//10
 	'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 0, 0, ASCII_NEW_LINE, 0, 'a', 's',
 	//20
@@ -80,10 +80,14 @@ void int_keyboard() {
 	return;
 }
 
-uint8_t key_getc()
+uint8_t key_getc(int is_blocking)
 {
 	if(key_buf_empty()) {
-		task_sleep(&key_cond);
+		if(is_blocking) {
+			task_sleep(&key_cond);
+		} else {
+			return 0;
+		}
 	}
 
 	return key_buf_pop();

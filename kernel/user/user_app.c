@@ -20,7 +20,7 @@ void userland_main() {
 
 		while(1) {
 			char tmp_buf[2];
-			char ch = sys_key_getc();
+			char ch = sys_key_getc(1);
 			if(ch == 0) {
 				continue;
 			}
@@ -38,8 +38,9 @@ void userland_main() {
 				break;
 			}
 		}
-
-		exec_command(buf);
+		if(buf_pos > 0) {
+			exec_command(buf);
+		}
 	}
 }
 
@@ -346,10 +347,77 @@ void exec_httpget(char *buf)
 	char http_res[1600];
 	while(1) {
 		memset(http_res, 0, 1500);
-		ret = sys_tcp_socket_recv(tcp_sock, (uint8_t *)http_res, 1500);
+		ret = sys_tcp_socket_recv(tcp_sock, (uint8_t *)http_res, 1500, 2000);
 		sys_print_str(http_res);
 		if(ret <= 0) {
 			break;
+		}
+	}
+	sys_tcp_socket_close(tcp_sock);
+	return;
+}
+
+void exec_telnet(char *buf)
+{
+	uint32_t ipaddr = parse_ipaddr(buf);
+	int udp_sock = sys_udp_socket();
+
+	if(ipaddr == 0) {
+		ipaddr = resolve_addr(udp_sock, buf);
+	}
+
+	if(ipaddr == 0) {
+		return;
+	}
+
+	sys_print_str("telnet to ");
+	sys_print_str(buf);
+	sys_print_str(" (");
+	sys_print_num((ipaddr >> 24) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 16) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 8) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 0) &0xff);
+	sys_print_str(")\n");
+
+	int tcp_sock = sys_tcp_socket();
+
+	int ret = sys_tcp_socket_connect(tcp_sock, ipaddr, 23);
+	if(ret != 1) {
+		ret = sys_tcp_socket_connect(tcp_sock, ipaddr, 23);
+		if(ret != 1) {
+			return;
+		}
+	}
+
+	uint8_t read_buf[1600];
+	memset(read_buf, 0, 1500);
+	while(1) {
+		ret = sys_tcp_socket_recv(tcp_sock, (uint8_t *)read_buf, 1500, 0);
+		if(ret > 0) {
+			int from = 0;
+			int to = 0;
+			//skip control chars
+			for(from = 0; from < ret; from++) {
+				if(read_buf[from] == 0xff) {
+					from += 2;
+				} else {
+					read_buf[to] = read_buf[from];
+					to++;
+				}
+			}
+			read_buf[to] = 0;
+			sys_print_str((char *)read_buf);
+			memset(read_buf, 0, 1500);
+		}
+		if(ret < 0) {
+			break;
+		}
+		char ch = sys_key_getc(0);
+		if(ch != 0) {
+			sys_tcp_socket_send(tcp_sock, (uint8_t *)&ch, 1);
 		}
 	}
 	sys_tcp_socket_close(tcp_sock);
@@ -364,6 +432,8 @@ void exec_command(char *buf)
 		exec_traceroute(buf + 11);
 	} else if(strncmp("httpget ", buf, 8)) {
 		exec_httpget(buf + 8);
+	} else if(strncmp("telnet ", buf, 7)) {
+		exec_telnet(buf + 7);
 	} else if(strncmp("help", buf, 4)) {
 		sys_print_str("ping dest (ipaddr/hostname)\n");
 		sys_print_str("traceroute dest (ipaddr/hostname)\n");

@@ -44,9 +44,9 @@ int sys_udp_socket_recv(int sock, uint8_t *buf, int size)
 	return sys_call(8, (uint64_t)sock, (uint64_t)buf, (uint64_t)size, 0, 0);
 }
 
-int sys_key_getc()
+int sys_key_getc(int is_blocking)
 {
-	return sys_call(9, 0, 0, 0, 0, 0);
+	return sys_call(9, (uint64_t)is_blocking, 0, 0, 0, 0);
 }
 
 uint64_t sys_get_tick()
@@ -69,9 +69,9 @@ int sys_tcp_socket_send(int sock, uint8_t *buf, int size)
 	return sys_call(13, (uint64_t) sock, (uint64_t) buf, (uint64_t) size, 0, 0);
 }
 
-int sys_tcp_socket_recv(int sock, uint8_t *buf, int size)
+int sys_tcp_socket_recv(int sock, uint8_t *buf, int size, int timeout_msec)
 {
-	return sys_call(14, (uint64_t) sock, (uint64_t) buf, (uint64_t) size, 0, 0);
+	return sys_call(14, (uint64_t) sock, (uint64_t) buf, (uint64_t) size, (uint64_t) timeout_msec, 0);
 }
 
 int sys_tcp_socket_close(int sock)

@@ -41,6 +41,6 @@ int tcp_socket_connect(int socket_id, uint32_t dip, uint16_t dport);
 int tcp_socket_send(int socket_id, uint8_t *buf, int size);
 void tcp_rx(struct pktbuf *pkt);
 int tcp_socket_close(int socket_id);
-int tcp_socket_recv(int socket_id, uint8_t *buf, int size);
+int tcp_socket_recv(int socket_id, uint8_t *buf, int size, int timeout_msec);
 
 #endif
