@@ -424,6 +424,112 @@ void exec_telnet(char *buf)
 	return;
 }
 
+void exec_nc(char *buf)
+{
+	char host[100];
+	char port[100];
+	int i;
+	int buf_len = strlen(buf);
+
+	memset(host, 0, 100);
+	memset(port, 0, 100);
+	for(i = 0; i < buf_len; i++) {
+		if(buf[i] == ' ') {
+			strncpy(host, buf, i);
+			strncpy(port, buf + i + 1, buf_len - i - 1);
+			break;
+		}
+	}
+	if(host[0] == 0){
+		return;
+	}
+
+	int udp_sock = sys_udp_socket();
+	uint32_t ipaddr = parse_ipaddr(host);
+	if(ipaddr == 0) {
+		ipaddr = resolve_addr(udp_sock, host);
+	}
+	if(ipaddr == 0) {
+		return;
+	}
+
+	uint32_t dstport = stoi(port);
+	if(dstport == 0) {
+		sys_print_str("invalid port: ");
+		sys_print_str(port);
+		sys_print_str("\n");
+		return;
+	}
+
+	sys_print_str("nc ");
+	sys_print_str(host);
+	sys_print_str(" (");
+	sys_print_num((ipaddr >> 24) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 16) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 8) &0xff);
+	sys_print_str(".");
+	sys_print_num((ipaddr >> 0) &0xff);
+	sys_print_str(")");
+	sys_print_str(" : ");
+	sys_print_num(dstport);
+	sys_print_str("\n");
+
+	int tcp_sock = sys_tcp_socket();
+
+	int ret = sys_tcp_socket_connect(tcp_sock, ipaddr, dstport);
+	if(ret != 1) {
+		ret = sys_tcp_socket_connect(tcp_sock, ipaddr, dstport);
+	}
+	if(ret != 1) {
+		return;
+	}
+
+	sys_print_str("Connected: type exit to exit nc command\n");
+
+	int write_pos = 0;
+	uint8_t write_buf[100];
+	uint8_t read_buf[100];
+	memset(write_buf, 0, 100);
+	memset(read_buf, 0, 100);
+	while(1) {
+		ret = sys_tcp_socket_recv(tcp_sock, (uint8_t *)read_buf, 100, 0);
+		if(ret > 0) {
+			sys_print_str((char *)read_buf);
+			memset(read_buf, 0, 100);
+		}
+		if(ret < 0) {
+			break;
+		}
+		char ch = sys_key_getc(0);
+		if(ch == 0){
+			continue;
+		}
+		char tmp_buf[2];
+		tmp_buf[0] = ch;
+		tmp_buf[1] = 0;
+		sys_print_str(tmp_buf);
+		if(ch == 0x0a) {
+			if(strlen((char *)write_buf) == 4 && strncmp((char *)write_buf, "exit", 4)) {
+				break;
+			}
+			sys_tcp_socket_send(tcp_sock, (uint8_t *)write_buf, write_pos);
+			write_pos = 0;
+			memset(write_buf, 0, 100);
+		} else {
+			write_buf[write_pos] = ch;
+			write_pos++;
+			if(write_pos > 90) {
+				sys_print_str("\ncommand too long\n");
+				break;
+			}
+		}
+	}
+	sys_tcp_socket_close(tcp_sock);
+	return;
+}
+
 void exec_command(char *buf)
 {
 	if(strncmp("ping ", buf, 5)) {
@@ -434,6 +540,8 @@ void exec_command(char *buf)
 		exec_httpget(buf + 8);
 	} else if(strncmp("telnet ", buf, 7)) {
 		exec_telnet(buf + 7);
+	} else if(strncmp("nc ", buf, 3)) {
+		exec_nc(buf + 3);
 	} else if(strncmp("help", buf, 4)) {
 		sys_print_str("ping dest (ipaddr/hostname)\n");
 		sys_print_str("traceroute dest (ipaddr/hostname)\n");
