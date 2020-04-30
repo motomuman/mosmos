@@ -12,6 +12,12 @@
 #include "timer.h"
 #include "asm.h"
 
+/*
+ * Currently
+ * 	Option is not implemented
+ * 	RxBuffering/Reordering is not implemented
+ */
+
 #define NULL 0
 
 #define TCP_SOCKET_FREE	0
@@ -41,8 +47,25 @@ struct tcp_rx_data {
 	int data_len;
 };
 
+#define RETRANSMIT_DUP_ACK_NUM 3
+// This should be dynamic
+#define RETRANSMIT_ACK_TIMEOUT_MSEC 1000
+
+// To store transmitted packet.
+// When socket received ack for this pkt,
+// Remove this info
+struct tcp_tx_data {
+	struct list_item link;
+	int socket_id;
+	uint32_t send_seq_num; //seq number of this pkt
+	uint32_t wait_ack_num; //ack number for this pkt (seq num + data size)
+	uint32_t dup_ack_num;
+	struct pktbuf * txpkt;
+};
+
 struct tcp_socket {
 	struct listctl rx_data_list;
+	struct listctl tx_data_list;
 	uint64_t wait_id;
 	uint16_t sport;
 	uint32_t sip;
@@ -101,6 +124,7 @@ void tcp_socket_init()
 	int i;
 	for(i = 0; i < TCP_SOCKET_COUNT; i++) {
 		list_init(&tcp_sockets[i].rx_data_list);
+		list_init(&tcp_sockets[i].tx_data_list);
 		tcp_sockets[i].flag = TCP_SOCKET_FREE;
 	}
 }
@@ -293,6 +317,40 @@ int tcp_socket_close(int socket_id)
 	return -1;
 }
 
+void tcp_ack_timeout(void *_args)
+{
+	int *args = (int*) _args;
+	int socket_id = args[0];
+	int seq_num = args[1];
+	struct tcp_socket *socket = &tcp_sockets[socket_id];
+	struct tcp_tx_data *tx_data;
+	int already_acked = 1;
+
+	if(socket->state == CLOSED) {
+		mem_free(args);
+		return;
+	}
+
+	//printstr_app("tcp_ack_timeout for ");
+	//printnum_app(seq_num);
+	//printstr_app("\n");
+	for(tx_data = (struct tcp_tx_data *)list_head(&socket->tx_data_list);
+			tx_data != NULL; tx_data = (struct tcp_tx_data *)list_next(&tx_data->link)){
+		if(tx_data->send_seq_num == seq_num) {
+			//printstr_app("tcp_ack_timeout, retransmit\n");
+			tx_data->txpkt->buf = tx_data->txpkt->buf_head + sizeof(struct ether_hdr);
+			ip_tx(tx_data->txpkt, socket->dip, IP_HDR_PROTO_TCP, 64);
+			already_acked = 0;
+		}
+	}
+	if(already_acked) {
+		mem_free(args);
+	} else {
+		wq_push_with_delay(tcp_ack_timeout, _args, RETRANSMIT_ACK_TIMEOUT_MSEC);
+	}
+}
+
+
 void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_t size, uint8_t flags)
 {
 	if(socket_id < 0 || socket_id >= TCP_SOCKET_COUNT) {
@@ -337,7 +395,6 @@ void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_
 	tcphdr->checksum = 0;
 	tcphdr->urg_ptr = 0;
 
-	socket->seq_num += size;
 
 	// MSS opt, need to support opt
 	// in more flexible way
@@ -363,8 +420,33 @@ void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_
 	txpkt->buf -= sizeof(struct ip_hdr);
 	ip_tx(txpkt, dip, IP_HDR_PROTO_TCP, 64);
 
-	mem_free(txpkt->buf_head);
-	mem_free(txpkt);
+	//if(size > 0) {
+		//store tx pkt to wait ack
+		struct tcp_tx_data *tx_data = (struct tcp_tx_data *) mem_alloc(sizeof(struct tcp_tx_data), "tx_data");
+		tx_data->socket_id = socket_id;
+
+		tx_data->send_seq_num = socket->seq_num;
+		socket->seq_num += size;
+		tx_data->wait_ack_num = socket->seq_num;
+		tx_data->dup_ack_num = 0;
+
+		tx_data->txpkt = txpkt;
+		//printstr_app("push pkt s: ");
+		//printnum_app(tx_data->send_seq_num);
+		//printstr_app(" a: ");
+		//printnum_app(tx_data->wait_ack_num);
+		//printstr_app("\n");
+		list_pushback(&socket->tx_data_list, &tx_data->link);
+
+		//set timeout for ack
+		int * args = (int *) mem_alloc(2 * sizeof(int), "tcp_ack_timeout_arg");
+		args[0] = socket_id;
+		args[1] = tx_data->send_seq_num;
+		wq_push_with_delay(tcp_ack_timeout, args, RETRANSMIT_ACK_TIMEOUT_MSEC);
+	//} else {
+	//	mem_free(txpkt->buf_head);
+	//	mem_free(txpkt);
+	//}
 }
 
 int tcp_socket_send(int socket_id, uint8_t *buf, int size)
@@ -438,6 +520,88 @@ int tcp_socket_recv(int socket_id, uint8_t *buf, int size, int timeout_msec)
 	return data_len;
 }
 
+void show_tx_buf(struct tcp_socket *socket){
+	struct tcp_tx_data *tx_data;
+
+	//detect dup ack. check retransmit necessity
+	for(tx_data = (struct tcp_tx_data *)list_head(&socket->tx_data_list);
+			tx_data != NULL; tx_data = (struct tcp_tx_data *)list_next(&tx_data->link)){
+		printstr_app("s: ");
+		printnum_app(tx_data->send_seq_num);
+		printstr_app("a: ");
+		printnum_app(tx_data->wait_ack_num);
+		printstr_app(" -> ");
+	}
+	printstr_app("\n");
+}
+
+void handle_ack(struct tcp_socket *socket, struct tcp_hdr *tcphdr){
+	//show_tx_buf(socket);
+
+	//printstr_app("handle ack ");
+	//printnum_app(ntoh32(tcphdr->ack_num));
+	//printstr_app(" ");
+
+	//check buffered tx pkt and remove acked pkt
+	struct tcp_tx_data *prev_tx_data = (struct tcp_tx_data *)list_head(&socket->tx_data_list);
+	struct tcp_tx_data *tx_data = (struct tcp_tx_data *)list_next(&prev_tx_data->link);
+	int find_ack = 0;
+
+	//check equal and after 2nd item
+	for(;tx_data != NULL; tx_data = (struct tcp_tx_data *)list_next(&tx_data->link)){
+		if(tx_data->wait_ack_num <= ntoh32(tcphdr->ack_num)) {
+			//printstr_app("find acked pkt: ");
+			//printnum_app(tx_data->wait_ack_num);
+			//printstr_app("\n");
+			list_remove(&socket->tx_data_list, &prev_tx_data->link);
+			mem_free(tx_data->txpkt->buf_head);
+			mem_free(tx_data->txpkt);
+			mem_free(tx_data);
+			find_ack = 1;
+		}
+		prev_tx_data = tx_data;
+	}
+
+	// check head item
+	tx_data = (struct tcp_tx_data *)list_head(&socket->tx_data_list);
+	if(tx_data->wait_ack_num <= ntoh32(tcphdr->ack_num)) {
+		//printstr_app("find acked pkt: ");
+		//printnum_app(tx_data->wait_ack_num);
+		//printstr_app("\n");
+		list_popfront(&socket->tx_data_list);
+		mem_free(tx_data->txpkt->buf_head);
+		mem_free(tx_data->txpkt);
+		mem_free(tx_data);
+		find_ack = 1;
+	}
+
+	if(find_ack) {
+		return;
+	}
+
+	//detect dup ack. check retransmit necessity
+	//printstr_app("DETECT DUPPED ACK ack: ");
+	//printnum_app(ntoh32(tcphdr->ack_num));
+	//printstr_app("\n");
+	for(tx_data = (struct tcp_tx_data *)list_head(&socket->tx_data_list);
+			tx_data != NULL; tx_data = (struct tcp_tx_data *)list_next(&tx_data->link)){
+		if(tx_data->send_seq_num == ntoh32(tcphdr->ack_num)) {
+			tx_data->dup_ack_num++;
+			//printstr_app("dup_count: ");
+			//printnum_app(tx_data->dup_ack_num);
+			//printstr_app("\n");
+			if(tx_data->dup_ack_num >= RETRANSMIT_DUP_ACK_NUM) {
+				//printstr_app("retransmit: ");
+				//printnum_app(tx_data->txpkt->pkt_len);
+				//printstr_app("\n");
+
+				tx_data->txpkt->buf = tx_data->txpkt->buf_head + sizeof(struct ether_hdr);
+				ip_tx(tx_data->txpkt, socket->dip, IP_HDR_PROTO_TCP, 64);
+			}
+		}
+	}
+}
+
 void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 {
 	struct tcp_socket *socket = &tcp_sockets[socket_id];
@@ -473,6 +637,7 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 			break;
 		case SYN_SENT:
 			if((ntoh16(tcphdr->flags) & TCP_FLAGS_SYN) && (ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
+				handle_ack(socket, tcphdr);
 				socket->ack_num = ntoh32(tcphdr->seq_num) + 1;
 				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK);
 				socket->state = ESTABLISHED;
@@ -494,6 +659,11 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 			}
 
 			socket->ack_num = ntoh32(tcphdr->seq_num) + data_len;
+
+			if(ntoh16(tcphdr->flags) & TCP_FLAGS_ACK) {
+				handle_ack(socket, tcphdr);
+			}
+
 			if((ntoh16(tcphdr->flags) & TCP_FLAGS_FIN) && (ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
 				socket->ack_num++;
 				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK | TCP_FLAGS_FIN);
@@ -504,6 +674,10 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 			}
 			break;
 		case FIN_WAIT_1:
+			if(ntoh16(tcphdr->flags) & TCP_FLAGS_ACK) {
+				handle_ack(socket, tcphdr);
+			}
+
 			if((ntoh16(tcphdr->flags) & TCP_FLAGS_FIN) && (ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
 				socket->ack_num++;
 				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK);

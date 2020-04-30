@@ -69,6 +69,30 @@ void list_insert(struct listctl *list, struct list_item *prev_item, struct list_
 	return;
 }
 
+// Remove item after prev_item
+void list_remove(struct listctl *list, struct list_item *prev_item)
+{
+	if(prev_item == NULL) {
+		return;
+	}
+
+	struct list_item *remove_item = prev_item->next;
+	if(remove_item == NULL) {
+		return;
+	}
+
+	prev_item->next = remove_item->next;
+	remove_item->next = NULL;
+
+	if(prev_item->next == NULL) {
+		list->tail = prev_item;
+	}
+
+	list->count--;
+	return;
+}
+
+
 struct list_item* list_head(struct listctl *list)
 {
 	return list->head;

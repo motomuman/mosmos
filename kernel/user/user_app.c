@@ -530,6 +530,43 @@ void exec_nc(char *buf)
 	return;
 }
 
+//test for tcp packet loss
+void exec_nctest()
+{
+	uint32_t ipaddr = (192 << 24) + (168 << 16) + (2 << 8) + 1;
+	uint32_t dstport = 8888;
+
+	sys_print_str("nctest\n");
+
+	int tcp_sock = sys_tcp_socket();
+
+	int ret = sys_tcp_socket_connect(tcp_sock, ipaddr, dstport);
+	if(ret != 1) {
+		ret = sys_tcp_socket_connect(tcp_sock, ipaddr, dstport);
+	}
+	if(ret != 1) {
+		return;
+	}
+
+	sys_print_str("Connected: test start\n");
+
+	int i, j;
+	for(i = 0; i < 30; i++) {
+		sys_print_str("i = ");
+		sys_print_num(i);
+		sys_print_str("\n");
+		uint8_t buf[2];
+		buf[0] = '0' + i%10;
+		buf[1] = '\n';
+		sys_tcp_socket_send(tcp_sock, (uint8_t *)buf, 2);
+		for(j = 0; j < 500000000; j++) {
+		}
+	}
+
+	sys_tcp_socket_close(tcp_sock);
+	return;
+}
+
 void exec_command(char *buf)
 {
 	if(strncmp("ping ", buf, 5)) {
@@ -542,6 +579,8 @@ void exec_command(char *buf)
 		exec_telnet(buf + 7);
 	} else if(strncmp("nc ", buf, 3)) {
 		exec_nc(buf + 3);
+	} else if(strncmp("nctest", buf, 6)) {
+		exec_nctest();
 	} else if(strncmp("help", buf, 4)) {
 		sys_print_str("ping dest (ipaddr/hostname)\n");
 		sys_print_str("traceroute dest (ipaddr/hostname)\n");
