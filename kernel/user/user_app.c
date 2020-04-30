@@ -530,7 +530,7 @@ void exec_nc(char *buf)
 	return;
 }
 
-//test for tcp packet loss
+//test for tcp tx packet loss
 void exec_nctest()
 {
 	uint32_t ipaddr = (192 << 24) + (168 << 16) + (2 << 8) + 1;
@@ -567,6 +567,51 @@ void exec_nctest()
 	return;
 }
 
+void exec_ncserver(char *buf)
+{
+	int tcp_sock = sys_tcp_socket();
+	uint32_t my_addr = (192 << 24) | (168 << 16) | (2 << 8) | 2;
+	int ret;
+
+	uint32_t port = stoi(buf);
+	if(port == 0) {
+		sys_print_str("invalid port: ");
+		sys_print_str(buf);
+		sys_print_str("\n");
+		return;
+	}
+
+	sys_tcp_socket_bind(tcp_sock, my_addr, port);
+	sys_tcp_socket_listen(tcp_sock);
+
+	ret = sys_tcp_socket_accept(tcp_sock);
+	if(ret == -1) {
+		sys_print_str("failed to accept\n");
+	} else {
+		sys_print_str("tcp connected\n");
+	}
+
+	uint8_t readbuf[1505];
+	while(1){
+		memset(readbuf, 0, 1505);
+		ret = sys_tcp_socket_recv(tcp_sock, (uint8_t *)readbuf, 1500, 1000);
+		if(ret == 0) {
+			sys_print_str("tcp_socket_recv timeout\n");
+			continue;
+		}
+		if(ret == -1) {
+			sys_print_str("tcp_socket_recv ret -1\n");
+			break;
+		}
+
+		sys_print_str((char*) readbuf);
+		sys_print_str("\n");
+	}
+
+	sys_tcp_socket_close(tcp_sock);
+	return;
+}
+
 void exec_command(char *buf)
 {
 	if(strncmp("ping ", buf, 5)) {
@@ -581,6 +626,8 @@ void exec_command(char *buf)
 		exec_nc(buf + 3);
 	} else if(strncmp("nctest", buf, 6)) {
 		exec_nctest();
+	} else if(strncmp("ncserver ", buf, 9)) {
+		exec_ncserver(buf + 9);
 	} else if(strncmp("help", buf, 4)) {
 		sys_print_str("ping dest (ipaddr/hostname)\n");
 		sys_print_str("traceroute dest (ipaddr/hostname)\n");

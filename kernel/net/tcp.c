@@ -19,6 +19,8 @@
  */
 
 #define NULL 0
+#define true 1
+#define false 0
 
 #define TCP_SOCKET_FREE	0
 #define TCP_SOCKET_USED	1
@@ -149,7 +151,7 @@ int tcp_socket()
 	return -1;
 }
 
-void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_t size, uint8_t flags);
+void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_t size, uint8_t flags, int need_ack);
 
 void tcp_connect_timeout(void *_args)
 {
@@ -184,7 +186,7 @@ int tcp_socket_connect(int socket_id, uint32_t dip, uint16_t dport)
 	switch(socket->state) {
 		case CLOSED:
 			//send syn
-			tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_SYN);
+			tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_SYN, true);
 			socket->seq_num++;
 			socket->state = SYN_SENT;
 
@@ -292,7 +294,7 @@ int tcp_socket_close(int socket_id)
 	struct tcp_socket *socket = &tcp_sockets[socket_id];
 	switch(socket->state) {
 		case ESTABLISHED:
-			tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK | TCP_FLAGS_FIN);
+			tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK | TCP_FLAGS_FIN, true);
 			socket->seq_num++;
 			socket->state = FIN_WAIT_1;
 			printstr_log("tcp_state: ESTABLISHED -> FIN_WAIT_1\n");
@@ -351,7 +353,7 @@ void tcp_ack_timeout(void *_args)
 }
 
 
-void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_t size, uint8_t flags)
+void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_t size, uint8_t flags, int need_ack)
 {
 	if(socket_id < 0 || socket_id >= TCP_SOCKET_COUNT) {
 		printstr_log("ERROR: invalid tcp socket_id\n");
@@ -420,7 +422,7 @@ void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_
 	txpkt->buf -= sizeof(struct ip_hdr);
 	ip_tx(txpkt, dip, IP_HDR_PROTO_TCP, 64);
 
-	//if(size > 0) {
+	if(need_ack) {
 		//store tx pkt to wait ack
 		struct tcp_tx_data *tx_data = (struct tcp_tx_data *) mem_alloc(sizeof(struct tcp_tx_data), "tx_data");
 		tx_data->socket_id = socket_id;
@@ -443,10 +445,10 @@ void tcp_send(int socket_id, uint32_t dip, uint16_t dport, uint8_t *buf, uint32_
 		args[0] = socket_id;
 		args[1] = tx_data->send_seq_num;
 		wq_push_with_delay(tcp_ack_timeout, args, RETRANSMIT_ACK_TIMEOUT_MSEC);
-	//} else {
-	//	mem_free(txpkt->buf_head);
-	//	mem_free(txpkt);
-	//}
+	} else {
+		mem_free(txpkt->buf_head);
+		mem_free(txpkt);
+	}
 }
 
 int tcp_socket_send(int socket_id, uint8_t *buf, int size)
@@ -454,7 +456,7 @@ int tcp_socket_send(int socket_id, uint8_t *buf, int size)
 	struct tcp_socket *socket = &tcp_sockets[socket_id];
 	switch(socket->state) {
 		case ESTABLISHED:
-			tcp_send(socket_id, socket->dip, socket->dport, buf, size, TCP_FLAGS_ACK);
+			tcp_send(socket_id, socket->dip, socket->dport, buf, size, TCP_FLAGS_ACK, true);
 			return 0;
 		case CLOSED:
 		case SYN_SENT:
@@ -543,16 +545,22 @@ void handle_ack(struct tcp_socket *socket, struct tcp_hdr *tcphdr){
 	//printstr_app(" ");
 
 	//check buffered tx pkt and remove acked pkt
-	struct tcp_tx_data *prev_tx_data = (struct tcp_tx_data *)list_head(&socket->tx_data_list);
-	struct tcp_tx_data *tx_data = (struct tcp_tx_data *)list_next(&prev_tx_data->link);
+	struct tcp_tx_data *prev_tx_data;
+	struct tcp_tx_data *tx_data;
 	int find_ack = 0;
+
+	prev_tx_data = (struct tcp_tx_data *)list_head(&socket->tx_data_list);
+	if(prev_tx_data == NULL) {
+		return;
+	}
+	tx_data = (struct tcp_tx_data *)list_next(&prev_tx_data->link);
 
 	//check equal and after 2nd item
 	for(;tx_data != NULL; tx_data = (struct tcp_tx_data *)list_next(&tx_data->link)){
 		if(tx_data->wait_ack_num <= ntoh32(tcphdr->ack_num)) {
-			//printstr_app("find acked pkt: ");
-			//printnum_app(tx_data->wait_ack_num);
-			//printstr_app("\n");
+			printstr_app("find acked pkt: ");
+			printnum_app(tx_data->wait_ack_num);
+			printstr_app("\n");
 			list_remove(&socket->tx_data_list, &prev_tx_data->link);
 			mem_free(tx_data->txpkt->buf_head);
 			mem_free(tx_data->txpkt);
@@ -565,9 +573,9 @@ void handle_ack(struct tcp_socket *socket, struct tcp_hdr *tcphdr){
 	// check head item
 	tx_data = (struct tcp_tx_data *)list_head(&socket->tx_data_list);
 	if(tx_data->wait_ack_num <= ntoh32(tcphdr->ack_num)) {
-		//printstr_app("find acked pkt: ");
-		//printnum_app(tx_data->wait_ack_num);
-		//printstr_app("\n");
+		printstr_app("find acked pkt: ");
+		printnum_app(tx_data->wait_ack_num);
+		printstr_app("\n");
 		list_popfront(&socket->tx_data_list);
 		mem_free(tx_data->txpkt->buf_head);
 		mem_free(tx_data->txpkt);
@@ -580,20 +588,20 @@ void handle_ack(struct tcp_socket *socket, struct tcp_hdr *tcphdr){
 	}
 
 	//detect dup ack. check retransmit necessity
-	//printstr_app("DETECT DUPPED ACK ack: ");
-	//printnum_app(ntoh32(tcphdr->ack_num));
-	//printstr_app("\n");
+	printstr_app("DETECT DUPPED ACK ack: ");
+	printnum_app(ntoh32(tcphdr->ack_num));
+	printstr_app("\n");
 	for(tx_data = (struct tcp_tx_data *)list_head(&socket->tx_data_list);
 			tx_data != NULL; tx_data = (struct tcp_tx_data *)list_next(&tx_data->link)){
 		if(tx_data->send_seq_num == ntoh32(tcphdr->ack_num)) {
 			tx_data->dup_ack_num++;
-			//printstr_app("dup_count: ");
-			//printnum_app(tx_data->dup_ack_num);
-			//printstr_app("\n");
+			printstr_app("dup_count: ");
+			printnum_app(tx_data->dup_ack_num);
+			printstr_app("\n");
 			if(tx_data->dup_ack_num >= RETRANSMIT_DUP_ACK_NUM) {
-				//printstr_app("retransmit: ");
-				//printnum_app(tx_data->txpkt->pkt_len);
-				//printstr_app("\n");
+				printstr_app("retransmit: ");
+				printnum_app(tx_data->txpkt->pkt_len);
+				printstr_app("\n");
 
 				tx_data->txpkt->buf = tx_data->txpkt->buf_head + sizeof(struct ether_hdr);
 				ip_tx(tx_data->txpkt, socket->dip, IP_HDR_PROTO_TCP, 64);
@@ -622,7 +630,7 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 				socket->ack_num = ntoh32(tcphdr->seq_num) + 1;
 				socket->dip = ntoh32(iphdr->sip);
 				socket->dport = ntoh16(tcphdr->sport);
-				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_SYN | TCP_FLAGS_ACK);
+				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_SYN | TCP_FLAGS_ACK, true);
 				socket->seq_num++;
 				socket->state = SYN_RCVD;
 				printstr_log("tcp_state: LISTEN -> SYN_RCVD\n");
@@ -639,7 +647,7 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 			if((ntoh16(tcphdr->flags) & TCP_FLAGS_SYN) && (ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
 				handle_ack(socket, tcphdr);
 				socket->ack_num = ntoh32(tcphdr->seq_num) + 1;
-				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK);
+				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK, false);
 				socket->state = ESTABLISHED;
 				printstr_log("tcp_state: SYN_SENT -> ESTABLISHED\n");
 				task_wakeup(socket);
@@ -666,11 +674,11 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 
 			if((ntoh16(tcphdr->flags) & TCP_FLAGS_FIN) && (ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
 				socket->ack_num++;
-				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK | TCP_FLAGS_FIN);
+				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK | TCP_FLAGS_FIN, true);
 				socket->state = CLOSING;
 				printstr_log("tcp_state: ESTABLISHED -> CLOSING\n");
 			} else if (data_len > 0) {
-				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK);
+				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK, false);
 			}
 			break;
 		case FIN_WAIT_1:
@@ -680,7 +688,7 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 
 			if((ntoh16(tcphdr->flags) & TCP_FLAGS_FIN) && (ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
 				socket->ack_num++;
-				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK);
+				tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK, false);
 				socket->state = CLOSED;
 				printstr_log("tcp_state: FIN_WAIT_1 -> CLOSED\n");
 				task_wakeup(socket);
@@ -696,6 +704,7 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 		default:
 			break;
 	}
+	return;
 }
 
 void tcp_rx(struct pktbuf *pkt)
