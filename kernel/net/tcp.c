@@ -74,8 +74,9 @@ struct tcp_socket {
 	uint16_t dport;
 	uint32_t dip;
 	uint8_t flag;
-	uint32_t seq_num;
-	uint32_t ack_num;
+
+	uint32_t seq_num; //next tx seq num
+	uint32_t ack_num; //ack num (next waiting rx seq num)
 	uint16_t win_size;
 	TCP_STATE state;
 };
@@ -637,7 +638,23 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 			}
 			break;
 		case SYN_RCVD:
+			pkt->buf += tcphdr_len;
 			if((ntoh16(tcphdr->flags) & TCP_FLAGS_ACK)) {
+				handle_ack(socket, tcphdr);
+
+				// ack pkt could contain data
+				if(data_len > 0) {
+					printstr_app("ack in 3 hand shake contains data!!\n");
+					// copy pkt data
+					struct tcp_rx_data *rx_data = (struct tcp_rx_data *) mem_alloc(sizeof(struct tcp_rx_data), "rx_data");
+					rx_data->data_len = data_len;
+					uint8_t *data = (uint8_t *) mem_alloc(data_len, "rx_data_data");
+					rx_data->data = data;
+					memcpy(data, pkt->buf, data_len);
+					list_pushback(&socket->rx_data_list, &rx_data->link);
+					socket->ack_num = ntoh32(tcphdr->seq_num) + data_len;
+				}
+
 				socket->state = ESTABLISHED;
 				printstr_log("tcp_state: SYN_RCVD -> ESTABLISHED\n");
 				task_wakeup(socket);
@@ -662,11 +679,24 @@ void tcp_recv_pkt(int socket_id, struct pktbuf *pkt)
 				uint8_t *data = (uint8_t *) mem_alloc(data_len, "rx_data_data");
 				rx_data->data = data;
 				memcpy(data, pkt->buf, data_len);
+
+				if(socket->ack_num != ntoh32(tcphdr->seq_num)) {
+					//PKT LOSS
+					//Currently, just skip and send dup ack
+					//Maybe need to buffer and use after reordering?
+					//Maybe it's better to use ring buffer for rx data
+					//so that we can just write this data to ring buffer
+					printstr_app("pkt loss\n");
+					tcp_send(socket_id, socket->dip, socket->dport, NULL, 0, TCP_FLAGS_ACK, false);
+					break;
+				}
+
 				list_pushback(&socket->rx_data_list, &rx_data->link);
+				socket->ack_num = ntoh32(tcphdr->seq_num) + data_len;
+
 				task_wakeup(socket);
 			}
 
-			socket->ack_num = ntoh32(tcphdr->seq_num) + data_len;
 
 			if(ntoh16(tcphdr->flags) & TCP_FLAGS_ACK) {
 				handle_ack(socket, tcphdr);
