@@ -1,5 +1,5 @@
-%include	"../asmlib/defines.s"
-%include	"../asmlib/macro.s"
+%include	"./defines.s"
+%include	"./macro.s"
 
 ORG BOOT_LOAD
 
@@ -59,8 +59,8 @@ iend
 ;------------------------------------
 ; Libraries
 ;------------------------------------
-%include	"../asmlib/puts.s"
-%include	"../asmlib/drive.s"
+%include	"./puts.s"
+%include	"./drive.s"
 
 ;------------------------------------
 ; Boot flag, end of first 512 bytes
