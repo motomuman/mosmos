@@ -1,21 +1,21 @@
-# mosmos
+## mosmos
 Toy OS for learning purpose
 
-# Demo
+## Demo
 ![audio_visualizer](https://github.com/motomuman/mosmos/blob/master/docs/mosmos_demo.gif?raw=true)
 
-# Features
+## Features
 
-# Todos
+## Todos
 
-# mosmos image
+## mosmos image
 |      |begin |end    |size|
 |---   |---   |---    |--- |
 |mbr   |0     |0x01ff |512B|
 |boot  |0x200 |0x1ffff|8KB |
 |kernel|0x2000|0x11fff|64KB|
 
-# Memory map
+## Memory map
 |                             |begin     |end       |size|
 |---                          |---       |---       |--- |
 |mbr + boot                   |0x00007c00|0x00009bff|8KB |
@@ -27,7 +27,7 @@ Toy OS for learning purpose
 |kstack for userapp(temporary)|          |0x00900000|    |
 |free(managed by mem lib)     |0x00a00000|          |    |
 
-# References
+## References
 - General OS knowledge
   - [はじめて読む486](https://www.amazon.co.jp/dp/B00OCF5YUA/)
   - [30日でできる! OS自作入門](https://www.amazon.co.jp/dp/B00IR1HYI0/)
