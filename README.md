@@ -14,7 +14,6 @@ Toy OS for learning purpose
 ## Todos
 - Run on QEMU
 - Better memory/page management
-- Support fragmented IP packet
 - Improve TCP stack
   - Handle reordering and options
   - Window control
