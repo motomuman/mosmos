@@ -12,6 +12,7 @@ Toy OS for learning purpose
 - Userland CLI application
 
 ## Todos
+- Run on QEMU
 - Better memory/page management
 - Support fragmented IP packet
 - Improve TCP stack
