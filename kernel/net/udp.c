@@ -42,6 +42,7 @@ void udp_socket_init()
 		list_init(&udp_sockets[i].rx_data_list);
 		udp_sockets[i].flag = UDP_SOCKET_FREE;
 	}
+	printstr_log("Initialized UDP socket\n");
 }
 
 int udp_socket()

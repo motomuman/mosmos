@@ -14,12 +14,10 @@ void ether_rx(void *_pkt)
 
 	switch(ntoh16(ehdr->type)) {
 		case ETHER_TYPE_ARP:
-			printstr_log("ether_rx: ARP\n");
 			pkt->buf += sizeof(struct ether_hdr);
 			arp_rx(pkt);
 			break;
 		case ETHER_TYPE_IPV4:
-			printstr_log("ether_rx: IPV4\n");
 			pkt->buf += sizeof(struct ether_hdr);
 			ip_rx(pkt);
 			break;

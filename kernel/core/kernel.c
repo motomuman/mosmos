@@ -50,11 +50,10 @@ void kstart(void)
 	raw_socket_init();
 	init_arptable();
 	init_r8169();
-	//uint32_t ip_addr = (192 << 24) | (168 << 16) | (1 << 8) | 16;
+
 	uint32_t ip_addr = (192 << 24) | (168 << 16) | (2 << 8) | 2;
 	netdev_set_ip_addr(ip_addr);
 
-	//uint32_t gw_addr = (192 << 24) | (168 << 16) | (1 << 8) | 1;
 	uint32_t gw_addr = (192 << 24) | (168 << 16) | (2 << 8) | 1;
 	netdev_set_gw_addr(gw_addr);
 
@@ -62,7 +61,6 @@ void kstart(void)
 
 	task_init();
 	task_start(userland_main, TASK_PRIORITY_HIGH, 1);
-	//task_start(task_tcp_server, TASK_PRIORITY_HIGH, 0);
 	task_start(task_idle_main, TASK_PRIORITY_LOW, 0);
 
 	io_sti();

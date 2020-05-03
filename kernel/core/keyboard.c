@@ -99,5 +99,7 @@ void init_keyboard()
 	key_buf_read = 0;
 	key_buf_write = 0;
 	key_buf_size = 0;
+
+	printstr_log("Initialized keyboard\n");
 	return;
 }

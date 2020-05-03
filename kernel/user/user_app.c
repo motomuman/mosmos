@@ -631,8 +631,11 @@ void exec_command(char *buf)
 	} else if(strncmp("help", buf, 4)) {
 		sys_print_str("ping dest (ipaddr/hostname)\n");
 		sys_print_str("traceroute dest (ipaddr/hostname)\n");
-		sys_print_str("traceroute dest (ipaddr/hostname)\n");
 		sys_print_str("httpget URL (http only)\n");
+		sys_print_str("telnet dest (ipaddr/hostname)\n");
+		sys_print_str("nc dest (ipaddr/hostname)\n");
+		sys_print_str("nctest dest (ipaddr/hostname)\n");
+		sys_print_str("ncserver port\n");
 	} else {
 		sys_print_str("command not found: ");
 		sys_print_str(buf);

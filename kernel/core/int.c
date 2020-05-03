@@ -48,6 +48,7 @@ void register_interrupt(int irq, void* handler) {
 void init_interrupt()
 {
 	init_pic();
+	printstr_log("Initialized PIC\n");
 }
 
 void pic_sendeoi(int irq)

@@ -37,6 +37,7 @@ void raw_socket_init()
 		list_init(&raw_sockets[i].rx_data_list);
 		raw_sockets[i].flag = RAW_SOCKET_FREE;
 	}
+	printstr_log("Initialized RAW socket\n");
 }
 
 int raw_socket(uint8_t proto)

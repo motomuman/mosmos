@@ -89,6 +89,7 @@ void init_pit()
 	io_out8(0x0040, 0x04); // higher 8 bit
 
 	register_interrupt(0, asm_int_pit);
+	printstr_log("Initialized pit\n");
 	return;
 }
 
@@ -103,5 +104,6 @@ void init_timer()
 	last_timer->tick = ~(last_timer->tick);
 	list_pushback(&timer_list, &last_timer->link);
 
+	printstr_log("Initialized timer\n");
 	return;
 }

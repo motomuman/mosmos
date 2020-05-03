@@ -50,6 +50,8 @@ void mem_init() {
 		freemem.len++;
 		memstart += MEM_GRANULARITY;
 	}
+
+	printstr_log("Initialized memory\n");
 	return;
 }
 

@@ -11,56 +11,9 @@
 
 #define NULL 0
 
-void show_iphdr(struct ip_hdr *iphdr)
-{
-	printstr_app("ver_ihl: ");
-	printhex_app(iphdr->ver_ihl);
-	printstr_app("\n");
-
-	printstr_app("tos: ");
-	printhex_app(iphdr->tos);
-	printstr_app("\n");
-
-	printstr_app("len: ");
-	printhex_app(ntoh16(iphdr->len));
-	printstr_app("\n");
-
-	printstr_app("id: ");
-	printhex_app(ntoh16(iphdr->id));
-	printstr_app("\n");
-
-	printstr_app("flafra: ");
-	printhex_app(ntoh16(iphdr->flafra));
-	printstr_app("\n");
-
-	printstr_app("ttl: ");
-	printhex_app(iphdr->ttl);
-	printstr_app("\n");
-
-	printstr_app("proto: ");
-	printhex_app(iphdr->proto);
-	printstr_app("\n");
-
-	printstr_app("sip: ");
-	printnum_app((ntoh32(iphdr->sip) >> 24) & 0xff);
-	printstr_app(".");
-	printnum_app((ntoh32(iphdr->sip) >> 16) & 0xff);
-	printstr_app(".");
-	printnum_app((ntoh32(iphdr->sip) >> 8) & 0xff);
-	printstr_app(".");
-	printnum_app((ntoh32(iphdr->sip) >> 0) & 0xff);
-	printstr_app("\n");
-
-	printstr_app("dip: ");
-	printnum_app((ntoh32(iphdr->dip) >> 24) & 0xff);
-	printstr_app(".");
-	printnum_app((ntoh32(iphdr->dip) >> 16) & 0xff);
-	printstr_app(".");
-	printnum_app((ntoh32(iphdr->dip) >> 8) & 0xff);
-	printstr_app(".");
-	printnum_app((ntoh32(iphdr->dip) >> 0) & 0xff);
-	printstr_app("\n");
-}
+/*
+ * TODO support IP packet fragmentation
+ */
 
 void ip_rx(struct pktbuf *pkt)
 {
@@ -72,15 +25,15 @@ void ip_rx(struct pktbuf *pkt)
 	//}
 
 	if(get_netdev()->ip_addr != ntoh32(iphdr->dip)) {
-		printstr_log("ignore ip packt to:");
-		printnum_log((ntoh32(iphdr->dip) >> 24) & 0xff);
-		printstr_log(".");
-		printnum_log((ntoh32(iphdr->dip) >> 16) & 0xff);
-		printstr_log(".");
-		printnum_log((ntoh32(iphdr->dip) >> 8) & 0xff);
-		printstr_log(".");
-		printnum_log((ntoh32(iphdr->dip) >> 0) & 0xff);
-		printstr_log("\n");
+		//printstr_log("ignore ip packt to:");
+		//printnum_log((ntoh32(iphdr->dip) >> 24) & 0xff);
+		//printstr_log(".");
+		//printnum_log((ntoh32(iphdr->dip) >> 16) & 0xff);
+		//printstr_log(".");
+		//printnum_log((ntoh32(iphdr->dip) >> 8) & 0xff);
+		//printstr_log(".");
+		//printnum_log((ntoh32(iphdr->dip) >> 0) & 0xff);
+		//printstr_log("\n");
 		return;
 	}
 
@@ -131,12 +84,34 @@ void ip_tx(struct pktbuf *pkt, uint32_t dip, uint8_t proto, uint8_t ttl)
 		nexthop_ip = netdev->gw_addr;
 	}
 
+	switch(proto) {
+		case IP_HDR_PROTO_ICMP:
+			printstr_log("ip_tx: ICMP\n");
+			break;
+		case IP_HDR_PROTO_TCP:
+			printstr_log("ip_tx: TCP\n");
+			break;
+		case IP_HDR_PROTO_UDP:
+			printstr_log("ip_tx: UDP\n");
+			break;
+		default:
+			printstr_log("ip_tx: UNKNOWN proto\n");
+			break;
+	}
+
 	uint8_t *mac_addr = find_mac_addr(nexthop_ip);
 	if(mac_addr == NULL) {
-		printstr_log("ip_tx: don't know mac addr, send arp\n");
+		printstr_log("Send arp: ");
+		printnum_log((nexthop_ip >> 24) & 0xff);
+		printstr_log(".");
+		printnum_log((nexthop_ip >> 16) & 0xff);
+		printstr_log(".");
+		printnum_log((nexthop_ip >> 8) & 0xff);
+		printstr_log(".");
+		printnum_log((nexthop_ip >> 0) & 0xff);
+		printstr_log("\n");
 		arp_tx(nexthop_ip);
 	} else {
-		printstr_log("ip_tx: I know mac addr send!\n");
 		pkt->buf -= sizeof(struct ether_hdr);
 		ether_tx(pkt, mac_addr, ETHER_TYPE_IPV4);
 	}

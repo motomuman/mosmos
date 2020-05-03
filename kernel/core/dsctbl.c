@@ -1,6 +1,7 @@
 #include "dsctbl.h"
 #include "lib.h"
 #include "asm.h"
+#include "print.h"
 
 // 64bit tss
 struct tss {
@@ -282,6 +283,8 @@ void init_gdtidt()
 	idtr->base = ADR_IDT;
 	idtr->size = IDT_NUM * sizeof(struct idt_gate) - 1;
 	load_idtr(idtr);
+
+	printstr_log("Initialized gdtidt\n");
 }
 
 void init_tss(void)
@@ -290,6 +293,8 @@ void init_tss(void)
 	memset(tss, 0, sizeof(struct tss));
 	tss->rsp0l = 0x00010000;
 	tss->rsp0h = 0;
+
+	printstr_log("Initialized tss\n");
 }
 
 void tr_load()

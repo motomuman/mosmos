@@ -55,6 +55,8 @@ struct TASK *task_init()
 
 	taskctl.next_task_id++;
 	taskctl.current_task = initial_task;
+
+	printstr_log("Initialized TASK lists\n");
 	return initial_task;
 }
 

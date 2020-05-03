@@ -4,6 +4,7 @@
 #include "memory.h"
 #include "timer.h"
 #include "asm.h"
+#include "print.h"
 
 struct workqueue {
 	struct listctl list;
@@ -20,6 +21,7 @@ struct workqueue wq;
 void wq_init()
 {
 	list_init(&wq.list);
+	printstr_log("Initialized workqueue\n");
 	return;
 }
 

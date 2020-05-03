@@ -181,9 +181,9 @@ void r8169_int_handler() {
 }
 
 void r8169_tx(struct pktbuf *pkt) {
-	printstr_log("r8169_tx (");
-	printnum_log(pkt->pkt_len);
-	printstr_log(")\n");
+	//printstr_log("r8169_tx (");
+	//printnum_log(pkt->pkt_len);
+	//printstr_log(")\n");
 
 	struct Descriptor *tx_desc = r8169_device.tx_ring + r8169_device.cur_tx;
 	if( tx_desc->opts1 & DescOwn ) {
@@ -235,6 +235,7 @@ int init_r8169() {
 	int ret = pci_find_device(&r8169_device.pcidev, PCI_VENDOR_ID_REALTEK, PCI_DEVICE_ID_REALTEK_810XE);
 	if(ret == 0) {
 		printstr_log("Failed to find r8169 device\n");
+		panic();
 		return 0;
 	}
 
@@ -298,6 +299,8 @@ int init_r8169() {
 	}
 	netdev_set_hw_addr(hw_addr);
 	netdev_set_tx_handler(r8169_tx);
+
+	printstr_log("Initialized r8169 deriver\n");
 
 	return 1;
 }

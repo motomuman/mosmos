@@ -75,6 +75,7 @@ void initscreen() {
 			*(uint8_t *) p = 0x10;
 		}
 	}
+	printstr_log("Initialized screen\n");
 }
 
 void clear(struct SCREEN *screen) {

@@ -21,6 +21,7 @@ struct {
 void init_arptable()
 {
 	arptable.next_entry_idx = 0;
+	printstr_log("Initialized ARP table\n");
 }
 
 void register_arpentry(uint8_t *mac_addr, uint32_t ip_addr)
@@ -97,6 +98,7 @@ void handle_arp_response(struct arp_etherip *arp)
 
 void arp_rx(struct pktbuf *pkt)
 {
+	printstr_log("ARP RX\n");
 	struct arp_hdr *arphdr = (struct arp_hdr *)pkt->buf;
 	pkt->buf += sizeof(struct arp_hdr);
 	struct arp_etherip *arp = (struct arp_etherip *)pkt->buf;

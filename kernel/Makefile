@@ -1,14 +1,13 @@
-# Order is important?
-# first object binary comes to first in kernel.
-# kasm has entry point and call kernel start in kernel.c.
-# So I need to put kasm first.
-
 AS = nasm
 CC = gcc
 
 ASFLAGS = -f elf64
 CFLAGS  =  -Wall -g -fleading-underscore -fno-builtin -nostdlib -I core -I dev -I lib -I net -I user
 
+# Order is important?
+# first object binary comes to first in kernel.
+# kasm has entry point and call kernel start in kernel.c.
+# So I need to put kasm first.
 OBJS_KERNEL = core/kasm.o
 OBJS_KERNEL += core/kernel.o
 OBJS_KERNEL += core/int.o
