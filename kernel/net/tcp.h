@@ -1,7 +1,7 @@
 #ifndef _TCP_H_
 #define _TCP_H_
 
-#include <stdint.h>
+#include "types.h"
 #include "pktbuf.h"
 
 #define TCP_FLAGS_FIN (1<<0)

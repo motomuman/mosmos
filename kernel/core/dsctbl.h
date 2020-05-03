@@ -1,7 +1,7 @@
 #ifndef _DSCTBL_H_
 #define _DSCTBL_H_
 
-#include <stdint.h>
+#include "types.h"
 
 void init_gdtidt();
 void set_idt(uint8_t idtidx, void* handler);

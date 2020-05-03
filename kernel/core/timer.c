@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include "types.h"
 #include "int.h"
 #include "list.h"
 #include "memory.h"
@@ -50,7 +50,6 @@ void set_timer(void (*func) (void *), void *arg, uint32_t time_msec)
 	return;
 }
 
-#define NULL 0
 
 void int_pit(int *esp) {
 	pic_sendeoi(PIT_IRQ);

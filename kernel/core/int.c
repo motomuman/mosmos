@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include "dsctbl.h"
 #include "int.h"
 #include "print.h"

@@ -1,7 +1,7 @@
 #ifndef _INT_H_
 #define _INT_H_
 
-#include <stdint.h>
+#include "types.h"
 
 #define PIT_IRQ 0
 #define KEYBOARD_IRQ 1

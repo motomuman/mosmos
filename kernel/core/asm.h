@@ -1,7 +1,7 @@
 #ifndef _ASM_H_
 #define _ASM_H_
 
-#include <stdint.h>
+#include "types.h"
 
 uint8_t io_in8(uint16_t port);
 int io_out8(uint16_t port, uint8_t data);

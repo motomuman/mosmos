@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include "types.h"
 #include "dsctbl.h"
 #include "print.h"
 #include "intasm.h"

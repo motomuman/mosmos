@@ -1,5 +1,5 @@
 #include "list.h"
-#define NULL 0
+#include "types.h"
 
 void list_init(struct listctl *list)
 {

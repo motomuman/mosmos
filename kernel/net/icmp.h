@@ -1,7 +1,7 @@
 #ifndef _ICMP_H_
 #define _ICMP_H_
 
-#include <stdint.h>
+#include "types.h"
 #include "pktbuf.h"
 
 #define ICMP_HDR_TYPE_ECHO_REPLY 0

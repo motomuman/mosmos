@@ -2,7 +2,7 @@
 #define _ARP_H_
 
 #include "ether.h"
-#include <stdint.h>
+#include "types.h"
 
 #define ARP_HARD_TYPE_ETHER 0x0001
 #define ARP_PROTO_TCPIP 0x0800

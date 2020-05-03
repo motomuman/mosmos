@@ -1,7 +1,7 @@
 #ifndef _WQ_H_
 #define _WQ_H_
 
-#include <stdint.h>
+#include "types.h"
 
 struct TASK;
 

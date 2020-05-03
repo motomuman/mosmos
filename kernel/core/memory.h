@@ -1,7 +1,7 @@
 #ifndef _MEMORY_H_
 #define _MEMORY_H_
 
-#include <stdint.h>
+#include "types.h"
 
 void mem_init();
 void mem_free(void* _addr);

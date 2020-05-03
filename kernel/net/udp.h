@@ -1,7 +1,7 @@
 #ifndef _UDP_H_
 #define _UDP_H_
 
-#include <stdint.h>
+#include "types.h"
 #include "pktbuf.h"
 
 struct udp_hdr {

@@ -1,7 +1,7 @@
 #ifndef _PCI_H_
 #define _PCI_H_
 
-#include <stdint.h>
+#include "types.h"
 
 // https://wiki.osdev.org/PCI
 #define PCI_CONFIG_ADDRESS_PORT 0xcf8

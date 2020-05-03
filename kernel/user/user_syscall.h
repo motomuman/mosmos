@@ -1,7 +1,7 @@
 #ifndef _USER_SYSCALL_H_
 #define _USER_SYSCALL_H_
 
-#include <stdint.h>
+#include "types.h"
 
 int sys_print_str(char *str);
 int sys_print_num(uint64_t num);

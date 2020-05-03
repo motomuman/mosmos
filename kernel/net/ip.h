@@ -1,7 +1,7 @@
 #ifndef _IP_H_
 #define _IP_H_
 
-#include <stdint.h>
+#include "types.h"
 #include "pktbuf.h"
 
 #define IP_HDR_PROTO_IPV4_VER 4

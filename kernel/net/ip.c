@@ -1,3 +1,4 @@
+#include "types.h"
 #include "ip.h"
 #include "print.h"
 #include "netutil.h"
@@ -9,7 +10,6 @@
 #include "udp.h"
 #include "tcp.h"
 
-#define NULL 0
 
 /*
  * TODO support IP packet fragmentation

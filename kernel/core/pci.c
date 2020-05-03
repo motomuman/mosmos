@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include "print.h"
 #include "pci.h"
 #include "asm.h"

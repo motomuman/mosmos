@@ -1,3 +1,4 @@
+#include "types.h"
 #include "udp.h"
 #include "print.h"
 #include "netutil.h"
@@ -11,8 +12,6 @@
 #include "workqueue.h"
 #include "timer.h"
 #include "asm.h"
-
-#define NULL 0
 
 #define UDP_SOCKET_FREE	0
 #define UDP_SOCKET_USED	1

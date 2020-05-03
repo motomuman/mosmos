@@ -1,7 +1,7 @@
 #ifndef _DNS_H_
 #define _DNS_H_
 
-#include <stdint.h>
+#include "types.h"
 
 /*
  * opt format

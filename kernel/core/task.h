@@ -2,9 +2,9 @@
 #define _TASK_H_
 
 #include "list.h"
+#include "types.h"
 
 #define MAX_TASK 100
-#define NULL 0
 #define TASK_INITIALIZED 1
 #define TASK_RUNNING 2
 #define TASK_WAITING 3

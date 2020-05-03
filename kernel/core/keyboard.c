@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include "types.h"
 #include "print.h"
 #include "list.h"
 #include "memory.h"
@@ -7,8 +7,6 @@
 #include "asm.h"
 #include "workqueue.h"
 #include "task.h"
-
-#define NULL 0
 
 #define ASCII_NEW_LINE 0x0a
 #define KEY_TABLE_SIZE 58

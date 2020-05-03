@@ -1,7 +1,7 @@
 #ifndef _PKTBUF_H_
 #define _PKTBUF_H_
 
-#include <stdint.h>
+#include "types.h"
 
 struct pktbuf {
 	uint32_t pkt_len;

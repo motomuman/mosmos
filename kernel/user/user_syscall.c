@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include "user_syscall.h"
 #include "user_syscall_asm.h"
 

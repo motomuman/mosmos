@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include "types.h"
 
 uint16_t reverse16(uint16_t bytes) {
 	uint16_t ret;

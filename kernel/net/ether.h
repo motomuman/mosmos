@@ -1,7 +1,7 @@
 #ifndef _ETHER_H_
 #define _ETHER_H_
 
-#include <stdint.h>
+#include "types.h"
 #include "pktbuf.h"
 
 #define ETHER_ADDR_LEN 6

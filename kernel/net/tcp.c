@@ -1,3 +1,4 @@
+#include "types.h"
 #include "tcp.h"
 #include "print.h"
 #include "netutil.h"
@@ -18,7 +19,6 @@
  * 	RxBuffering/Reordering is not implemented
  */
 
-#define NULL 0
 #define true 1
 #define false 0
 
