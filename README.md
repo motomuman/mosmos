@@ -5,8 +5,23 @@ Toy OS for learning purpose
 ![audio_visualizer](https://github.com/motomuman/mosmos/blob/master/docs/mosmos_demo.gif?raw=true)
 
 ## Features
+- x86_64 support
+- Multitasking
+- RTL8169 NIC driver
+- Network stack (TCP, UDP, IP)
+- Userland CLI application
 
 ## Todos
+- Better memory/page management
+- Support fragmented IP packet
+- Improve TCP stack
+  - Handle reordering and options
+  - Window control
+  - Test with various cases (e.g. pkt loss, large delay)
+- SMP support
+- File system
+- UEFI support
+
 
 ## mosmos image
 |      |begin |end    |size|
