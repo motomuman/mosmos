@@ -323,14 +323,14 @@ void exec_httpget(char *buf)
 	strncpy(http_req, http_str1, strlen(http_str1));
 	http_req += strlen(http_str1);
 
-	strncpy(http_req, host, strlen(host));
-	http_req += strlen(host);
+	strncpy(http_req, path, strlen(path));
+	http_req += strlen(path);
 
 	strncpy(http_req, http_str2, strlen(http_str2));
 	http_req += strlen(http_str2);
 
-	strncpy(http_req, path, strlen(path));
-	http_req += strlen(path);
+	strncpy(http_req, host, strlen(host));
+	http_req += strlen(host);
 
 	strncpy(http_req, http_str3, strlen(http_str3));
 	http_req += strlen(http_str3);
@@ -636,6 +636,23 @@ void exec_command(char *buf)
 		sys_print_str("nc dest (ipaddr/hostname)\n");
 		sys_print_str("nctest dest (ipaddr/hostname)\n");
 		sys_print_str("ncserver port\n");
+	} else if(strncmp("thankyou", buf, 8)) {
+		sys_print_str(" _____ _              _    __   __        \n");
+		sys_print_str("|_   _| |_  __ _ _ _ | |__ \\ \\ / /__ _  _ \n");
+		sys_print_str("  | | | ' \\/ _` | ' \\| / /  \\ V / _ \\ || |\n");
+		sys_print_str("  |_| |_||_\\__,_|_||_|_\\_\\   |_|\\___/\\_,_|\n");
+		sys_print_str("                                          \n");
+		sys_print_str("                ___        \n");
+		sys_print_str("               | __|__ _ _ \n");
+		sys_print_str("               | _/ _ \\ '_|\n");
+		sys_print_str("               |_|\\___/_|  \n");
+		sys_print_str("            \n");
+		sys_print_str("__      __    _      _    _             _   _ \n");
+		sys_print_str("\\ \\    / /_ _| |_ __| |_ (_)_ _  __ _  | | | |\n");
+		sys_print_str(" \\ \\/\\/ / _` |  _/ _| ' \\| | ' \\/ _` | |_| |_|\n");
+		sys_print_str("  \\_/\\_/\\__,_|\\__\\__|_||_|_|_||_\\__, | (_) (_)\n");
+		sys_print_str("                                |___/         \n");
+		sys_print_str("\n");
 	} else {
 		sys_print_str("command not found: ");
 		sys_print_str(buf);
